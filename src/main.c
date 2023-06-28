@@ -12,21 +12,23 @@
 #define FRAGMENT 'f'
 #define VERTEX 'v'
 
-glm::vec3 cameraPos		= glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront	= glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp		= glm::vec3(0.0f, 1.0f, 0.0f);
-glm::vec3 direction		= glm::vec3(0.0f, 0.0f, 0.0f);
+#define CUBE 192
+//CUBE = sizeof(vertices)
 
-glm::mat4 model			= glm::mat4(1.0f);
-glm::mat4 view			= glm::mat4(1.0f);
-glm::mat4 proj			= glm::mat4(1.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 direction	= glm::vec3(0.0f, 0.0f, 0.0f);
+
+glm::mat4 model = glm::mat4(1.0f);
+glm::mat4 view = glm::mat4(1.0f);
+glm::mat4 proj = glm::mat4(1.0f);
 
 GLfloat yaw = -90.0f;
 GLfloat pitch = 0.0f;
 
 GLfloat lastX = 400, lastY = 400;
 int firstMouse = true;
-
 
 GLuint VAO, VBO, EBO;
 GLuint shaderProgram;
@@ -90,14 +92,50 @@ int main(void)
 
 	GLfloat vertices[] =
 	{ //     COORDINATES     /        COLORS      
-		-0.5f, -0.5f, -0.5f,	1.00f, 0.00f, 0.00f,
-		-0.5f, -0.5f, 0.5f,		0.00f, 1.00f, 0.00f,
-		-0.5f, 0.5f, 0.5f,		0.00f, 0.00f, 1.00f,
-		0.5f, 0.5f, -0.5f,		1.00f, 0.00f, 0.00f,
-		-0.5f, 0.5f, -0.5f,		0.00f, 1.00f, 0.00f,
-		0.5f,-0.5f, 0.5f,		0.00f, 0.00f, 1.00f,
-		0.5f,-0.5f,-0.5f,		1.00f, 0.00f, 0.00f,
-		0.5f, 0.5f, 0.5f,		0.00f, 1.00f, 0.00f,
+		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
+		-0.5f, -0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
+		-0.5f, 0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
+		0.5f, 0.5f, -0.5f,		0.3411f, 0.2549f, 0.1569f,
+		-0.5f, 0.5f, -0.5f,		0.3411f, 0.2549f, 0.1569f,
+		0.5f,-0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
+		0.5f,-0.5f,-0.5f,		0.3411f, 0.2549f, 0.1569f,
+		0.5f, 0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f
+	};
+	
+	GLfloat grass[] = 
+	{ //     COORDINATES     /        COLORS      
+		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
+		-0.5f, -0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
+		-0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
+		0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
+		-0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
+		0.5f,-0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
+		0.5f,-0.5f,-0.5f,		0.3411f, 0.2549f, 0.1569f,
+		0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f
+	};
+	
+	GLfloat log[] = 
+	{ //     COORDINATES     /        COLORS      
+		-0.5f, -0.5f, -0.5f,	0.2902, 0.1725f, 0.1725f,
+		-0.5f, -0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
+		-0.5f, 0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
+		0.5f, 0.5f, -0.5f,		0.2902, 0.1725f, 0.1725f,
+		-0.5f, 0.5f, -0.5f,		0.2902, 0.1725f, 0.1725f,
+		0.5f,-0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
+		0.5f,-0.5f,-0.5f,		0.2902, 0.1725f, 0.1725f,
+		0.5f, 0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f
+	};
+	
+	GLfloat leaves[] = 
+	{ //     COORDINATES     /        COLORS      
+		-0.5f, -0.5f, -0.5f,	0.0078f, 0.5412f, 0.0588f,
+		-0.5f, -0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
+		-0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
+		0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
+		-0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
+		0.5f,-0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
+		0.5f,-0.5f,-0.5f,		0.0078f, 0.5412f, 0.0588f,
+		0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f
 	};
 
 	GLuint indices[] =
@@ -116,33 +154,184 @@ int main(void)
 		7, 2, 5
 	};
 	
+	
+	
+	glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(1.0f, 0.0f, 0.0f),
+	glm::vec3(-1.0f, 0.0f, 0.0f),
+	glm::vec3(0.0f, 0.0f, 1.0f),
+	glm::vec3(1.0f, 0.0f, 1.0f),
+	glm::vec3(-1.0f, 0.0f, 1.0f),
+	glm::vec3(0.0f, 0.0f, -1.0f),
+	glm::vec3(1.0f, 0.0f, -1.0f),
+	glm::vec3(-1.0f, 0.0f, -1.0f),
+	
+	glm::vec3(-3.0f, 0.0f, 0.0f),
+	glm::vec3(-2.0f, 0.0f, 0.0f),
+	glm::vec3(-4.0f, 0.0f, 0.0f),
+	glm::vec3(-3.0f, 0.0f, 1.0f),
+	glm::vec3(-2.0f, 0.0f, 1.0f),
+	glm::vec3(-4.0f, 0.0f, 1.0f),
+	glm::vec3(-3.0f, 0.0f, -1.0f),
+	glm::vec3(-2.0f, 0.0f, -1.0f),
+	glm::vec3(-4.0f, 0.0f, -1.0f),
+	
+	glm::vec3(-3.0f, 0.0f, 3.0f),
+	glm::vec3(-2.0f, 0.0f, 3.0f),
+	glm::vec3(-4.0f, 0.0f, 3.0f),
+	glm::vec3(-3.0f, 0.0f, 4.0f),
+	glm::vec3(-2.0f, 0.0f, 4.0f),
+	glm::vec3(-4.0f, 0.0f, 4.0f),
+	glm::vec3(-3.0f, 0.0f, 2.0f),
+	glm::vec3(-2.0f, 0.0f, 2.0f),
+	glm::vec3(-4.0f, 0.0f, 2.0f),
+	
+	glm::vec3(0.0f, -1.0f, 0.0f),
+	glm::vec3(1.0f, -1.0f, 0.0f),
+	glm::vec3(-1.0f, -1.0f, 0.0f),
+	glm::vec3(0.0f, -1.0f, 1.0f),
+	glm::vec3(1.0f, -1.0f, 1.0f),
+	glm::vec3(-1.0f, -1.0f, 1.0f),
+	glm::vec3(0.0f, -1.0f, -1.0f),
+	glm::vec3(1.0f, -1.0f, -1.0f),
+	glm::vec3(-1.0f, -1.0f, -1.0f),
+	
+	glm::vec3(-3.0f, -1.0f, 0.0f),
+	glm::vec3(-2.0f, -1.0f, 0.0f),
+	glm::vec3(-4.0f, -1.0f, 0.0f),
+	glm::vec3(-3.0f, -1.0f, 1.0f),
+	glm::vec3(-2.0f, -1.0f, 1.0f),
+	glm::vec3(-4.0f, -1.0f, 1.0f),
+	glm::vec3(-3.0f, -1.0f, -1.0f),
+	glm::vec3(-2.0f, -1.0f, -1.0f),
+	glm::vec3(-4.0f, -1.0f, -1.0f),
+	
+	glm::vec3(-3.0f, -1.0f, 3.0f),
+	glm::vec3(-2.0f, -1.0f, 3.0f),
+	glm::vec3(-4.0f, -1.0f, 3.0f),
+	glm::vec3(-3.0f, -1.0f, 4.0f),
+	glm::vec3(-2.0f, -1.0f, 4.0f),
+	glm::vec3(-4.0f, -1.0f, 4.0f),
+	glm::vec3(-3.0f, -1.0f, 2.0f),
+	glm::vec3(-2.0f, -1.0f, 2.0f),
+	glm::vec3(-4.0f, -1.0f, 2.0f),
+	
+	glm::vec3(0.0f, 1.0f, 0.0f),
+	glm::vec3(1.0f, 1.0f, 0.0f),
+	glm::vec3(-1.0f, 1.0f, 0.0f),
+	glm::vec3(0.0f, 1.0f, 1.0f),
+	glm::vec3(1.0f, 1.0f, 1.0f),
+	glm::vec3(-1.0f, 1.0f, 1.0f),
+	glm::vec3(0.0f, 1.0f, -1.0f),
+	glm::vec3(1.0f, 1.0f, -1.0f),
+	glm::vec3(-1.0f, 1.0f, -1.0f),
+	
+	glm::vec3(-3.0f, 1.0f, 0.0f),
+	glm::vec3(-2.0f, 1.0f, 0.0f),
+	glm::vec3(-4.0f, 1.0f, 0.0f),
+	glm::vec3(-3.0f, 1.0f, 1.0f),
+	glm::vec3(-2.0f, 1.0f, 1.0f),
+	glm::vec3(-4.0f, 1.0f, 1.0f),
+	glm::vec3(-3.0f, 1.0f, -1.0f),
+	glm::vec3(-2.0f, 1.0f, -1.0f),
+	glm::vec3(-4.0f, 1.0f, -1.0f),
+	
+	glm::vec3(-3.0f, 1.0f, 3.0f),
+	glm::vec3(-2.0f, 1.0f, 3.0f),
+	glm::vec3(-4.0f, 1.0f, 3.0f),
+	glm::vec3(-3.0f, 1.0f, 4.0f),
+	glm::vec3(-2.0f, 1.0f, 4.0f),
+	glm::vec3(-4.0f, 1.0f, 4.0f),
+	glm::vec3(-3.0f, 1.0f, 2.0f),
+	glm::vec3(-2.0f, 1.0f, 2.0f),
+	glm::vec3(-4.0f, 1.0f, 2.0f),
+	
+	glm::vec3(-3.0f, 2.0f, 0.0f),
+	glm::vec3(-3.0f, 3.0f, 0.0f),
+	glm::vec3(-3.0f, 4.0f, 0.0f),
+	glm::vec3(-3.0f, 5.0f, 0.0f),
+	glm::vec3(-3.0f, 6.0f, 0.0f),
+	
+	glm::vec3(-2.0f, 6.0f, 0.0f),
+	glm::vec3(-4.0f, 6.0f, 0.0f),
+	glm::vec3(-3.0f, 6.0f, 1.0f),
+	glm::vec3(-2.0f, 6.0f, 1.0f),
+	glm::vec3(-4.0f, 6.0f, 1.0f),
+	glm::vec3(-3.0f, 6.0f, -1.0f),
+	glm::vec3(-2.0f, 6.0f, -1.0f),
+	glm::vec3(-4.0f, 6.0f, -1.0f),
+	
+	glm::vec3(-3.0f, 7.0f, 0.0f),
+	glm::vec3(-2.0f, 7.0f, 0.0f),
+	glm::vec3(-4.0f, 7.0f, 0.0f),
+	glm::vec3(-3.0f, 7.0f, 1.0f),
+	glm::vec3(-2.0f, 7.0f, 1.0f),
+	glm::vec3(-4.0f, 7.0f, 1.0f),
+	glm::vec3(-3.0f, 7.0f, -1.0f),
+	glm::vec3(-2.0f, 7.0f, -1.0f),
+	glm::vec3(-4.0f, 7.0f, -1.0f),
+	
+	glm::vec3(-3.0f, 8.0f, 0.0f)
+};
+	
 	//Gerando o VertexArry, VertexBuffer e o IndexBuffer.
-	glGenVertexArrays(1, &VAO);
+	
+	GLuint VAOID[4] = {0};
+	
+	for (int i = 0; i < sizeof(VAOID) / sizeof(GLuint); i++)
+		glGenVertexArrays(1, &VAOID[i]);
+	
+	//glGenVertexArrays(1, &VAOID[0]);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
+		//glGenVertexArrays(1, &VAOID[1]);
+	
+	GLuint EBOGrass;
+	glGenBuffers(1, &EBOGrass);
 	
 	
-	//Bindando o VAO, precisa ser feito antes de trabalhar com o VBO e EBO.
-	glBindVertexArray(VAO);
 	
-	//Bindando o VBO e passando as informações pro buffer.
+	
+	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, CUBE * sizeof(VAOID) / sizeof(GLuint), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, CUBE*0, CUBE, vertices);
+	glBufferSubData(GL_ARRAY_BUFFER, CUBE*1, CUBE, grass);
+	glBufferSubData(GL_ARRAY_BUFFER, CUBE*2, CUBE, log);
+	glBufferSubData(GL_ARRAY_BUFFER, CUBE*3, CUBE, leaves);
+
+	//GLint size = 0;
+	//glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+
+	for (int i = 0; i < sizeof(VAOID) / sizeof(GLuint); i++){
+		glBindVertexArray(VAOID[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(CUBE*i));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(CUBE*i + 3*sizeof(float)));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
 	
-	//Bindando o EBO e passando as informações pro buffer.
+	
+	/*glBindVertexArray(VAOID[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	
-	//Passando a localização de onde as informações  devem ser retiradas do buffer.
-	//1 - location, 2 - size, 3 - type, 4 - ???, 5 - numero de elementos por vertex, 6 - onde comeca os elementos dessa location.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(3*sizeof(float)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)CUBE*1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(CUBE*1 + 3*sizeof(float)));
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);*/
+
+	
 	
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
@@ -152,14 +341,18 @@ int main(void)
 	
 	float cameraSpeed = 0.05f;
 	
+	
+	
 	while (!glfwWindowShouldClose(window))
 	{
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(0.5059f, 0.8314f, 0.9804f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
 		
+		model = glm::mat4(1.0f);
+		view = glm::mat4(1.0f);
+		proj = glm::mat4(1.0f);
 		
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		    cameraPos += cameraSpeed * cameraFront;
@@ -178,8 +371,8 @@ int main(void)
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		    cameraSpeed -= 0.001f;
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-			cameraPos		= glm::vec3(0.0f, 0.0f, 3.0f);
-			cameraFront	= glm::vec3(0.0f, 0.0f, -1.0f);
+			cameraPos		= glm::vec3(0.0f, 0.0f, 0.0f);
+			cameraFront		= glm::vec3(0.0f, 0.0f, -1.0f);
 			cameraUp		= glm::vec3(0.0f, 1.0f, 0.0f);
 			lastX = 400;
 			lastY = 400;
@@ -198,7 +391,37 @@ int main(void)
 		int projLoc = glGetUniformLocation(shaderProgram, "proj");
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 		
-		glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(VAOID[0]);
+		for (int i = 0; i < 54; i++){
+			model = glm::translate(model, cubePositions[i]);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			model = glm::mat4(1.0f);
+			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+		}
+		
+		glBindVertexArray(VAOID[1]);
+		for (int i = 54; i < 81; i++){
+			model = glm::translate(model, cubePositions[i]);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			model = glm::mat4(1.0f);
+			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+		}
+		
+		glBindVertexArray(VAOID[2]);
+		for (int i = 81; i < 86; i++){
+			model = glm::translate(model, cubePositions[i]);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			model = glm::mat4(1.0f);
+			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+		}
+		
+		glBindVertexArray(VAOID[3]);
+		for (int i = 86; i < 104; i++){
+			model = glm::translate(model, cubePositions[i]);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			model = glm::mat4(1.0f);
+			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+		}
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -213,6 +436,10 @@ int main(void)
 	glfwTerminate();
 	return 0;
 }
+
+
+
+
 
 const char* getShader (char *filePath, char type)
 {
@@ -279,7 +506,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    float sensitivity = 0.1f;
+    float sensitivity = 0.01f;
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 
