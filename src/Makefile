@@ -1,2 +1,3 @@
 main.exe: main.c
-    g++ main.c -o main.exe -lglfw -lGL -lGLEW -lm
+	g++ main.c -o main.exe -lglfw -lGL -lGLEW -lm
+
