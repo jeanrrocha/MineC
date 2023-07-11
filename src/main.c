@@ -15,7 +15,11 @@
 #define CUBE 192
 //CUBE = sizeof(vertices)
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+const int windowWidth = 800;
+const int windowHeight = 800;
+const char* windowTitle = "MineC";
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 3.0f, 0.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 direction	= glm::vec3(0.0f, 0.0f, 0.0f);
@@ -27,7 +31,7 @@ glm::mat4 proj = glm::mat4(1.0f);
 GLfloat yaw = -90.0f;
 GLfloat pitch = 0.0f;
 
-GLfloat lastX = 400, lastY = 400;
+GLfloat lastX = windowWidth/2, lastY = windowHeight/2;
 int firstMouse = true;
 
 GLuint VAO, VBO, EBO;
@@ -36,6 +40,7 @@ GLuint shaderProgram;
 const char* getShader (char *filePath, char type);
 void closeWindow (GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+int intersect(float *origin, float *direction, float *position, float t0, float t1);
 
 int main(void)
 {	
@@ -51,10 +56,6 @@ int main(void)
 		printf ("Failed to initialize GLFW.\n");
 		return -1;
 	}
-	
-	const int windowWidth = 800;
-	const int windowHeight = 800;
-	const char* windowTitle = "MineC";
 	
 	window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, NULL, NULL);
 	if (!window){
@@ -91,7 +92,7 @@ int main(void)
 	glDeleteShader(fragmentShader);
 
 	GLfloat vertices[] =
-	{ //     COORDINATES     /        COLORS      
+	{    
 		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
 		-0.5f, -0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
 		-0.5f, 0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
@@ -103,7 +104,7 @@ int main(void)
 	};
 	
 	GLfloat grass[] = 
-	{ //     COORDINATES     /        COLORS      
+	{ 
 		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
 		-0.5f, -0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
 		-0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
@@ -115,7 +116,7 @@ int main(void)
 	};
 	
 	GLfloat log[] = 
-	{ //     COORDINATES     /        COLORS      
+	{  
 		-0.5f, -0.5f, -0.5f,	0.2902, 0.1725f, 0.1725f,
 		-0.5f, -0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
 		-0.5f, 0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
@@ -127,15 +128,15 @@ int main(void)
 	};
 	
 	GLfloat leaves[] = 
-	{ //     COORDINATES     /        COLORS      
-		-0.5f, -0.5f, -0.5f,	0.0078f, 0.5412f, 0.0588f,
-		-0.5f, -0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
-		-0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
-		0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
-		-0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
-		0.5f,-0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
-		0.5f,-0.5f,-0.5f,		0.0078f, 0.5412f, 0.0588f,
-		0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f
+	{    
+		-0.5f, -0.5f, -0.5f,	0.1961f, 0.8039f, 0.1961f,
+		-0.5f, -0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f,
+		-0.5f, 0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f,
+		0.5f, 0.5f, -0.5f,		0.1961f, 0.8039f, 0.1961f,
+		-0.5f, 0.5f, -0.5f,		0.1961f, 0.8039f, 0.1961f,
+		0.5f,-0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f,
+		0.5f,-0.5f,-0.5f,		0.1961f, 0.8039f, 0.1961f,
+		0.5f, 0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f
 	};
 
 	GLuint indices[] =
@@ -156,7 +157,8 @@ int main(void)
 	
 	
 	
-	glm::vec3 cubePositions[] = {
+	glm::vec3 cubePositions[] =
+	{
 	glm::vec3(0.0f, 0.0f, 0.0f),
 	glm::vec3(1.0f, 0.0f, 0.0f),
 	glm::vec3(-1.0f, 0.0f, 0.0f),
@@ -273,26 +275,16 @@ int main(void)
 	glm::vec3(-4.0f, 7.0f, -1.0f),
 	
 	glm::vec3(-3.0f, 8.0f, 0.0f)
-};
-	
-	//Gerando o VertexArry, VertexBuffer e o IndexBuffer.
+	};
 	
 	GLuint VAOID[4] = {0};
 	
 	for (int i = 0; i < sizeof(VAOID) / sizeof(GLuint); i++)
 		glGenVertexArrays(1, &VAOID[i]);
-	
-	//glGenVertexArrays(1, &VAOID[0]);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
-		//glGenVertexArrays(1, &VAOID[1]);
 	
-	GLuint EBOGrass;
-	glGenBuffers(1, &EBOGrass);
-	
-	
-	
-	
+
 	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, CUBE * sizeof(VAOID) / sizeof(GLuint), 0, GL_STATIC_DRAW);
@@ -319,20 +311,6 @@ int main(void)
 	}
 	
 	
-	/*glBindVertexArray(VAOID[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)CUBE*1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(CUBE*1 + 3*sizeof(float)));
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);*/
-
-	
-	
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 	
@@ -354,10 +332,27 @@ int main(void)
 		view = glm::mat4(1.0f);
 		proj = glm::mat4(1.0f);
 		
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+		    cameraSpeed = 0.1f;
+		
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		    cameraPos += cameraSpeed * cameraFront;
+		{
+			glm::vec3 aux = cameraFront;
+			aux.y = 0;
+			aux = glm::normalize(aux);
+			
+			cameraPos += cameraSpeed * aux;
+		
+		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		    cameraPos -= cameraSpeed * cameraFront;
+		{
+			glm::vec3 aux = cameraFront;
+			aux.y = 0;
+			aux = glm::normalize(aux);
+			
+			cameraPos -= cameraSpeed * aux;
+		
+		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		    cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
@@ -371,7 +366,7 @@ int main(void)
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		    cameraSpeed -= 0.001f;
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-			cameraPos		= glm::vec3(0.0f, 0.0f, 0.0f);
+			cameraPos		= glm::vec3(0.0f, 3.5f, 0.0f);
 			cameraFront		= glm::vec3(0.0f, 0.0f, -1.0f);
 			cameraUp		= glm::vec3(0.0f, 1.0f, 0.0f);
 			lastX = 400;
@@ -379,10 +374,11 @@ int main(void)
 			yaw = -90.0f;
 			pitch = 0.0f;
 		}
+		cameraSpeed = 0.05f;
 		    		
 
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		proj = glm::perspective(glm::radians(90.0f), (float)(windowWidth/windowHeight), 0.1f, 100.0f);
+		proj = glm::perspective(glm::radians(90.0f), (float)(windowWidth/windowHeight), 0.2f, 100.0f);
 		
 		int modelLoc = glGetUniformLocation(shaderProgram, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -400,8 +396,15 @@ int main(void)
 		}
 		
 		glBindVertexArray(VAOID[1]);
+		
+		float a[3] = {cameraPos.x, cameraPos.y, cameraPos.z};
+		float b[3] = {cameraFront.x, cameraFront.y, cameraFront.z};
+		
 		for (int i = 54; i < 81; i++){
 			model = glm::translate(model, cubePositions[i]);
+			float c[3] = {cubePositions[i].x, cubePositions[i].y, cubePositions[i].z};
+			if (intersect (a, b, c, -0.5, 0.5))
+				printf ("%d\n", i);
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			model = glm::mat4(1.0f);
 			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
@@ -506,20 +509,51 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    float sensitivity = 0.01f;
+    float sensitivity = 0.1f;
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 
     yaw   += xoffset;
     pitch += yoffset;
 
-    if(pitch > 89.0f)
-        pitch = 89.0f;
-    if(pitch < -89.0f)
-        pitch = -89.0f;
+    if(pitch > 89.9f)
+        pitch = 89.9f;
+    if(pitch < -89.9f)
+        pitch = -89.9f;
 
     direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     direction.y = sin(glm::radians(pitch));
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(direction);
+}
+
+int intersect(float *origin, float *direction, float *position, float t0, float t1){
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	
+	float bounds[][3] = {{position[0]-0.5f, position[1]-0.5f, position[2]-0.5f}, {position[0]+0.5f, position[1]+0.5f, position[2]+0.5f}};
+	
+	float inv[] = {1/direction[0], 1/direction[1], 1/direction[2]};
+	int sign[] = {(inv[0] < 0), (inv[1] < 0), (inv[2] < 0)};
+	
+	tmin = (bounds[sign[0]][0] - origin[0]) * inv[0];
+	tmax = (bounds[1-sign[0]][0] - origin[0]) * inv[0];
+	tymin = (bounds[sign[1]][1] - origin[1]) * inv[1];
+	tymax = (bounds[1-sign[1]][1] - origin[1]) * inv[1];
+	
+	if ( (tmin > tymax) || (tymin > tmax) )
+		return false;
+	if (tymin > tmin)
+		tmin = tymin;
+	if (tymax < tmax)
+		tmax = tymax;
+	tzmin = (bounds[sign[2]][2] - origin[2]) * inv[2];
+	tzmax = (bounds[1-sign[2]][2] - origin[2]) * inv[2];
+	if ( (tmin > tzmax) || (tzmin > tmax) )
+		return false;
+	if (tzmin > tmin)
+		tmin = tzmin;
+	if (tzmax < tmax)
+		tmax = tzmax;
+	return 1;
+	//return ((tmin < t1) && (tmax > t0));
 }
