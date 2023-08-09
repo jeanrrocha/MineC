@@ -2,146 +2,205 @@
 #include <stdlib.h>
 #include <malloc.h>
 
+typedef struct {
+	int x;
+	int y;
+	int z;
+	int id;
+} block;
+
 typedef struct node {
-	int element;
+	block data;
+	char bal;
 	struct node *left, *right;
-	short BF;
 } node;
 
-node *newNode (int data){
-	node *new = (node*)malloc(sizeof(node));
-	new->element = data;
-	new->left = new->right = NULL;
-	new->BF = 0;
+void destroyChunk (node* T) {
+	if (!T)
+		return;
+	
+	destroyChunk (T->left);
+	destroyChunk (T->right);
+	free (T);
 }
 
-node *rotateLL (node* src){
-	node *aux = src->left;
-	src->left = aux->right;
-	aux->right = src;
-	src->BF = 0;
-	aux->BF = 0;
+node* rotEE( node* T ) { 
+	node *aux = T->left;
+	T->left = aux->right;
+	aux->right = T;
+	T->bal = 0;
+	aux->bal = 0;
 	return aux;
 }
 
-node *rotateRR (node* src){
-	node *aux = src->right;
-	src->right = aux->left;
-	aux->left = src;
-	src->BF = 0;
-	aux->BF = 0;
+node* rotDD( node* T ) {
+	node *aux = T->right;
+	T->right = aux->left;
+	aux->left = T;
+	T->bal = 0;
+	aux->bal = 0;
 	return aux;
 }
 
-node *rotateLR (node *src){
-	node *aux = src->left;
+node* rotED( node* T ) {
+	node *aux = T->left;
 	node *aux2 = aux->right;
 	aux->right = aux2->left;
 	aux2->left = aux;
-	src->left = aux2->right;
-	aux2->right = src;
-	if (aux2->BF == -1){
-		src->BF = 1;
-		aux->BF = 0;
-		aux2->BF = 0;
-	} else if (aux2->BF == 1){
-		src->BF = 0;
-		aux->BF = -1;
-		aux2->BF = 0;
+	T->left = aux2->right;
+	aux2->right = T;
+	if (aux2->bal == -1){
+		T->bal = 1;
+		aux->bal = 0;
+		aux2->bal = 0;
+	} else if (aux2->bal == 1){
+		T->bal = 0;
+		aux->bal = -1;
+		aux2->bal = 0;
 	} else {
-		src->BF = 0;
-		aux->BF = 0;
+		T->bal = 0;
+		aux->bal = 0;
 	}
 	return aux2;
 }
 
-node *rotateRL (node *src){
-	node *aux = src->right;
+node* rotDE( node* T ) {
+	node *aux = T->right;
 	node *aux2 = aux->left;
 	aux->left = aux2->right;
 	aux2->right = aux;
-	src->right = aux2->left;
-	aux2->left = src;
-	if (aux2->BF == -1){
-		src->BF = 0;
-		aux->BF = 1;
-		aux2->BF = 0;
-	} else if (aux2->BF == 1){
-		src->BF = -1;
-		aux->BF = 0;
-		aux2->BF = 0;
+	T->right = aux2->left;
+	aux2->left = T;
+	if (aux2->bal == -1){
+		T->bal = 0;
+		aux->bal = 1;
+		aux2->bal = 0;
+	} else if (aux2->bal == 1){
+		T->bal = -1;
+		aux->bal = 0;
+		aux2->bal = 0;
 	} else {
-		src->BF = 0;
-		aux->BF = 0;
+		T->bal = 0;
+		aux->bal = 0;
 	}
 	return aux2;
 }
 
-void preOrder(node *root)
-{
-    if(root != NULL)
-    {
-        printf("%d ", root->element);
-        preOrder(root->left);
-        preOrder(root->right);
-    }
+int compareBlocks (block first, block second) {
+	if (first.x != second.x)
+		return first.x < second.x;
+	if (first.y != second.y)
+		return first.y < second.y;
+	return first.z < second.z;
 }
 
-node *insertNode (node *src, int data, int *heightChange){
-	if (!src){
-		*heightChange = 1;
-		return newNode (data);
+node* insert (node *T, block data, int* height) {
+	
+	if (!T) {
+		node *new = (node*)malloc(sizeof(node));
+		new->data = data;
+		new->bal = 0;
+		new->left = new->right = NULL;
+		*height = 1;
+		return new;
 	}
 	
-	if (data < src->element){
-		src->left = insertNode(src->left, data, heightChange);
-		if (*heightChange == 1){
-			if (src->BF == 1)
-				*heightChange = 0;
-			src->BF--;
+	if (compareBlocks (data, T->data)) {
+		T->left = insert (T->left, data, height);
+		if (*height == 1) {
+			T->bal--;
+			if (T->bal == 0) {
+				*height = 0;
+				return T;
+			} else if (T->bal == -2) {
+				*height = 0;
+				if (T->left->bal == -1)
+					return rotEE(T);
+				else
+					return rotED(T);
+			}
 		}
-	} else {
-		src->right = insertNode(src->right, data, heightChange);
-		if (*heightChange == 1){
-			if (src->BF == -1)
-				*heightChange = 0;
-			src->BF++;
+	} else if (compareBlocks (T->data, data)) {
+		T->right = insert (T->right, data, height);
+		if (*height == 1) {
+			T->bal++;
+			if (T->bal == 0) {
+				*height = 0;
+				return T;
+			} else if (T->bal == 2) {
+				*height = 0;
+				if (T->right->bal == 1)
+					return rotDD(T);
+				else
+					return rotDE(T);
+			}
 		}
 	}
-	
-	if (src->BF == -2){
-		if (src->left->BF == -1)
-			src = rotateLL(src);
-		else
-			src = rotateLR(src);
-		*heightChange = 0;
-	} else if (src->BF == 2){
-		if (src->right->BF == 1)
-			src = rotateRR(src);
-		else
-			src = rotateRL(src);
-		*heightChange = 0;
-	}
-	return src;
+	return T;
 }
 
-node *insert (node *src, int data){
+void insertBlock (node **T, block data) {
 	int height = 0;
-	return insertNode(src, data, &height);
+	
+	*T = insert (*T, data, &height);
 }
+
+void print (node *T) {
+	if (!T)
+		return;
+	
+	print (T->left);
+	printf ("%d %d %d %d\n", T->data.x, T->data.y, T->data.z, T->data.id);
+	print (T->right);
+}
+
+void printPRE (node *T) {
+	if (!T)
+		return;
+	
+	printf ("%d %d %d %d\n", T->data.x, T->data.y, T->data.z, T->data.id);
+	print (T->left);
+	
+	print (T->right);
+}
+
+void printPOS (node *T) {
+	if (!T)
+		return;
+	
+	print (T->left);
+	
+	print (T->right);
+	printf ("%d %d %d %d\n", T->data.x, T->data.y, T->data.z, T->data.id);
+}
+
+
 
 int main (){
-	node *AVL = NULL;
+	node *chunk = NULL;
 	
-	int *height = malloc(sizeof(int));;
-	*height = 0;
+	int height = 0;
 	
-	for (int i = 1; i < 32; i++){
-		AVL = insert(AVL, i);
-		*height = 0;
-	}
+	//chunk = insert (chunk, (block){1, 1, 1, 0}, &height);
 	
-	preOrder(AVL);
+	print(chunk);
+	
+	insertBlock (&chunk, (block){1, 1, 1, 0});
+	insertBlock (&chunk, (block){2, 1, 1, 0});
+	insertBlock (&chunk, (block){3, 1, 1, 0});
+	insertBlock (&chunk, (block){1, 1, 2, 0});
+	insertBlock (&chunk, (block){1, 1, 1, 0});
+	insertBlock (&chunk, (block){2, 2, 1, 0});
+	insertBlock (&chunk, (block){1, 2, 2, 0});
+	insertBlock (&chunk, (block){2, 1, 2, 0});
+	insertBlock (&chunk, (block){2, 2, 2, 0});
+
+	
+	print(chunk);
+	printf ("\n");
+	printPRE(chunk);
+	printf ("\n");
+	printPOS(chunk);
 	printf ("\n");
 	
 	return 0;

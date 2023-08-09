@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "avl.h"
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -14,6 +15,8 @@
 
 #define CUBE 192
 //CUBE = sizeof(vertices)
+
+int modelLoc;
 
 const int windowWidth = 800;
 const int windowHeight = 800;
@@ -40,7 +43,37 @@ GLuint shaderProgram;
 const char* getShader (char *filePath, char type);
 void closeWindow (GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
-int intersect(float *origin, float *direction, float *position, float t0, float t1);
+int intersect(float *origin, float *position, float *direction, float range);
+
+void drawALL (node *blocks, GLuint VAOID[]) {
+	if (!blocks)
+		return;
+	
+	model = glm::mat4 (1.0f);
+	model = glm::translate (model, glm::vec3 (blocks->data.x, blocks->data.y, blocks->data.z));
+	
+	//temporario, correto seria sem o -1
+	glBindVertexArray(VAOID[blocks->data.id-1]);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	
+	glDrawElements(GL_TRIANGLES, sizeof(GLuint)*36/sizeof(int), GL_UNSIGNED_INT, 0);
+	
+	drawALL (blocks->left, VAOID);
+	drawALL (blocks->right, VAOID);
+}
+
+void printBal (node *T) {
+	if (!T)
+		return;
+	
+	printf ("%d\n", T->bal);
+	if (T->bal != -1 && T->bal != 0 && T->bal != 1)
+		exit (0);
+	printBal (T->left);
+	printBal (T->right);
+}
+
+int help = 0;
 
 int main(void)
 {	
@@ -90,7 +123,19 @@ int main(void)
 	
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
-
+	
+	GLfloat bedrock[] =
+	{    
+		-0.5f, -0.5f, -0.5f,	0.f, 0.f, 0.f,
+		-0.5f, -0.5f, 0.5f,		0.f, 0.f, 0.f,
+		-0.5f, 0.5f, 0.5f,		0.f, 0.f, 0.f,
+		0.5f, 0.5f, -0.5f,		0.f, 0.f, 0.f,
+		-0.5f, 0.5f, -0.5f,		0.f, 0.f, 0.f,
+		0.5f,-0.5f, 0.5f,		0.f, 0.f, 0.f,
+		0.5f,-0.5f,-0.5f,		0.f, 0.f, 0.f,
+		0.5f, 0.5f, 0.5f,		0.f, 0.f, 0.f
+	};
+	
 	GLfloat vertices[] =
 	{    
 		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
@@ -155,6 +200,107 @@ int main(void)
 		7, 2, 5
 	};
 	
+	
+	
+	node *chunk = NULL;
+	
+	//insertBlock (&chunk, (block){3, 0, 0, 1});
+	//insertBlock (&chunk, (block){4, 0, 0, 1});
+	//insertBlock (&chunk, (block){1, 0, 0, 1});
+	//insertBlock (&chunk, (block){2, 0, 0, 1});
+	
+	//removeBlock (&chunk, (block){2, 0, 0, 1});
+	
+	
+	insertBlock (&chunk, (block){0, 0, 0, 1});
+	insertBlock (&chunk, (block){1, 0, 0, 1});
+	insertBlock (&chunk, (block){-1, 0, 0, 1});
+	insertBlock (&chunk, (block){0, 0, 1, 1});
+	insertBlock (&chunk, (block){1, 0, 1, 1});
+	insertBlock (&chunk, (block){-1, 0, 1, 1});
+	insertBlock (&chunk, (block){0, 0, -1, 1});
+	insertBlock (&chunk, (block){1, 0, -1, 1});
+	insertBlock (&chunk, (block){-1, 0, -1, 1});
+	
+	insertBlock (&chunk, (block){-3, 0, 0, 1});
+	insertBlock (&chunk, (block){-2, 0, 0, 1});
+	insertBlock (&chunk, (block){-4, 0, 0, 1});
+	insertBlock (&chunk, (block){-3, 0, 1, 1});
+	insertBlock (&chunk, (block){-2, 0, 1, 1});
+	insertBlock (&chunk, (block){-4, 0, 1, 1});
+	insertBlock (&chunk, (block){-3, 0, -1, 1});
+	insertBlock (&chunk, (block){-2, 0, -1, 1});
+	insertBlock (&chunk, (block){-4, 0, -1, 1});
+	
+	insertBlock (&chunk, (block){-3, 0, 3, 1});
+	insertBlock (&chunk, (block){-2, 0, 3, 1});
+	insertBlock (&chunk, (block){-4, 0, 3, 1});
+	insertBlock (&chunk, (block){-3, 0, 4, 1});
+	insertBlock (&chunk, (block){-2, 0, 4, 1});
+	insertBlock (&chunk, (block){-4, 0, 4, 1});
+	insertBlock (&chunk, (block){-3, 0, 2, 1});
+	insertBlock (&chunk, (block){-2, 0, 2, 1});
+	insertBlock (&chunk, (block){-4, 0, 2, 1});
+	
+	insertBlock (&chunk, (block){0, -1, 0, 1});
+	insertBlock (&chunk, (block){1, -1, 0, 1});
+	insertBlock (&chunk, (block){-1, -1, 0, 1});
+	insertBlock (&chunk, (block){0, -1, 1, 1});
+	insertBlock (&chunk, (block){1, -1, 1, 1});
+	insertBlock (&chunk, (block){-1, -1, 1, 1});
+	insertBlock (&chunk, (block){0, -1, -1, 1});
+	insertBlock (&chunk, (block){1, -1, -1, 1});
+	insertBlock (&chunk, (block){-1, -1, -1, 1});
+	
+	insertBlock (&chunk, (block){-3, -1, 0, 1});
+	insertBlock (&chunk, (block){-2, -1, 0, 1});
+	insertBlock (&chunk, (block){-4, -1, 0, 1});
+	insertBlock (&chunk, (block){-3, -1, 1, 1});
+	insertBlock (&chunk, (block){-2, -1, 1, 1});
+	insertBlock (&chunk, (block){-4, -1, 1, 1});
+	insertBlock (&chunk, (block){-3, -1, -1, 1});
+	insertBlock (&chunk, (block){-2, -1, -1, 1});
+	insertBlock (&chunk, (block){-4, -1, -1, 1});
+	
+	insertBlock (&chunk, (block){-3, -1, 3, 1});
+	insertBlock (&chunk, (block){-2, -1, 3, 1});
+	insertBlock (&chunk, (block){-4, -1, 3, 1});
+	insertBlock (&chunk, (block){-3, -1, 4, 1});
+	insertBlock (&chunk, (block){-2, -1, 4, 1});
+	insertBlock (&chunk, (block){-4, -1, 4, 1});
+	insertBlock (&chunk, (block){-3, -1, 2, 1});
+	insertBlock (&chunk, (block){-2, -1, 2, 1});
+	insertBlock (&chunk, (block){-4, -1, 2, 1});
+	
+	insertBlock (&chunk, (block){0, 1, 0, 2});
+	insertBlock (&chunk, (block){1, 1, 0, 2});
+	insertBlock (&chunk, (block){-1, 1, 0, 2});
+	insertBlock (&chunk, (block){0, 1, 1, 2});
+	insertBlock (&chunk, (block){1, 1, 1, 2});
+	insertBlock (&chunk, (block){-1, 1, 1, 2});
+	insertBlock (&chunk, (block){0, 1, -1, 2});
+	insertBlock (&chunk, (block){1, 1, -1, 2});
+	insertBlock (&chunk, (block){-1, 1, -1, 2});
+	
+	insertBlock (&chunk, (block){-3, 1, 0, 2});
+	insertBlock (&chunk, (block){-2, 1, 0, 2});
+	insertBlock (&chunk, (block){-4, 1, 0, 2});
+	insertBlock (&chunk, (block){-3, 1, 1, 2});
+	insertBlock (&chunk, (block){-2, 1, 1, 2});
+	insertBlock (&chunk, (block){-4, 1, 1, 2});
+	insertBlock (&chunk, (block){-3, 1, -1, 2});
+	insertBlock (&chunk, (block){-2, 1, -1, 2});
+	insertBlock (&chunk, (block){-4, 1, -1, 2});
+	
+	insertBlock (&chunk, (block){-3, 1, 3, 2});
+	insertBlock (&chunk, (block){-2, 1, 3, 2});
+	insertBlock (&chunk, (block){-4, 1, 3, 2});
+	insertBlock (&chunk, (block){-3, 1, 4, 2});
+	insertBlock (&chunk, (block){-2, 1, 4, 2});
+	insertBlock (&chunk, (block){-4, 1, 4, 2});
+	insertBlock (&chunk, (block){-3, 1, 2, 2});
+	insertBlock (&chunk, (block){-2, 1, 2, 2});
+	insertBlock (&chunk, (block){-4, 1, 2, 2});
 	
 	
 	glm::vec3 cubePositions[] =
@@ -365,6 +511,14 @@ int main(void)
 		    cameraSpeed += 0.001f;
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		    cameraSpeed -= 0.001f;
+		if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && help == 0) {
+		    removeBlock (&chunk, min(chunk));
+			help = 60;
+			printBal (chunk);
+		}
+		
+		if (help > 0)
+			help--;
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
 			cameraPos		= glm::vec3(0.0f, 3.5f, 0.0f);
 			cameraFront		= glm::vec3(0.0f, 0.0f, -1.0f);
@@ -380,13 +534,15 @@ int main(void)
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 		proj = glm::perspective(glm::radians(90.0f), (float)(windowWidth/windowHeight), 0.2f, 100.0f);
 		
-		int modelLoc = glGetUniformLocation(shaderProgram, "model");
+		modelLoc = glGetUniformLocation(shaderProgram, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		int viewLoc = glGetUniformLocation(shaderProgram, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		int projLoc = glGetUniformLocation(shaderProgram, "proj");
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 		
+		drawALL (chunk, VAOID);
+		/*
 		glBindVertexArray(VAOID[0]);
 		for (int i = 0; i < 54; i++){
 			model = glm::translate(model, cubePositions[i]);
@@ -400,11 +556,8 @@ int main(void)
 		float a[3] = {cameraPos.x, cameraPos.y, cameraPos.z};
 		float b[3] = {cameraFront.x, cameraFront.y, cameraFront.z};
 		
-		for (int i = 54; i < 81; i++){
+		for (int i = 54; i < 81; i++) {
 			model = glm::translate(model, cubePositions[i]);
-			float c[3] = {cubePositions[i].x, cubePositions[i].y, cubePositions[i].z};
-			if (intersect (a, b, c, -0.5, 0.5))
-				printf ("%d\n", i);
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			model = glm::mat4(1.0f);
 			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
@@ -425,7 +578,7 @@ int main(void)
 			model = glm::mat4(1.0f);
 			glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
 		}
-		
+		*/
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -527,33 +680,6 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     cameraFront = glm::normalize(direction);
 }
 
-int intersect(float *origin, float *direction, float *position, float t0, float t1){
-	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	
-	float bounds[][3] = {{position[0]-0.5f, position[1]-0.5f, position[2]-0.5f}, {position[0]+0.5f, position[1]+0.5f, position[2]+0.5f}};
-	
-	float inv[] = {1/direction[0], 1/direction[1], 1/direction[2]};
-	int sign[] = {(inv[0] < 0), (inv[1] < 0), (inv[2] < 0)};
-	
-	tmin = (bounds[sign[0]][0] - origin[0]) * inv[0];
-	tmax = (bounds[1-sign[0]][0] - origin[0]) * inv[0];
-	tymin = (bounds[sign[1]][1] - origin[1]) * inv[1];
-	tymax = (bounds[1-sign[1]][1] - origin[1]) * inv[1];
-	
-	if ( (tmin > tymax) || (tymin > tmax) )
-		return false;
-	if (tymin > tmin)
-		tmin = tymin;
-	if (tymax < tmax)
-		tmax = tymax;
-	tzmin = (bounds[sign[2]][2] - origin[2]) * inv[2];
-	tzmax = (bounds[1-sign[2]][2] - origin[2]) * inv[2];
-	if ( (tmin > tzmax) || (tzmin > tmax) )
-		return false;
-	if (tzmin > tmin)
-		tmin = tzmin;
-	if (tzmax < tmax)
-		tmax = tzmax;
-	return 1;
-	//return ((tmin < t1) && (tmax > t0));
+int intersect (float *origin, float *position, float *direction, float range){
+	//socorro
 }
