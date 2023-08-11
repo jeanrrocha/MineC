@@ -2,6 +2,14 @@
 #define AVL_H
 
 typedef struct {
+	double x;
+	double y;
+	double z;
+} vector;
+
+typedef vector point3D;
+
+typedef struct {
 	int x;
 	int y;
 	int z;

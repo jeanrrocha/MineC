@@ -22,6 +22,15 @@ const int windowWidth = 800;
 const int windowHeight = 800;
 const char* windowTitle = "MineC";
 
+typedef struct {
+	vector origin;
+	vector direction;
+	vector invDirection;
+	int sign[3];
+} ray;
+
+ray initializeRay (vector origin, vector direction);
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 3.0f, 0.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -43,24 +52,36 @@ GLuint shaderProgram;
 const char* getShader (char *filePath, char type);
 void closeWindow (GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
-int intersect(float *origin, float *position, float *direction, float range);
 
-void drawALL (node *blocks, GLuint VAOID[]) {
-	if (!blocks)
-		return;
-	
-	model = glm::mat4 (1.0f);
-	model = glm::translate (model, glm::vec3 (blocks->data.x, blocks->data.y, blocks->data.z));
-	
-	//temporario, correto seria sem o -1
-	glBindVertexArray(VAOID[blocks->data.id-1]);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	
-	glDrawElements(GL_TRIANGLES, sizeof(GLuint)*36/sizeof(int), GL_UNSIGNED_INT, 0);
-	
-	drawALL (blocks->left, VAOID);
-	drawALL (blocks->right, VAOID);
+int intersectTest (vector position, ray r, float range);
+
+vector blocksInRange[1331] = {(vector){0, 0, 0}};
+
+vector addVectors(vector a,vector b){
+	return (vector){a.x+b.x,a.y+b.y,a.z+b.z};
 }
+
+vector subVectors(vector a,vector b){
+	return (vector){a.x-b.x,a.y-b.y,a.z-b.z};
+}
+
+double dotProduct(vector a,vector b){
+	return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+vector scaleVector(double l,vector a){
+	return (vector){l*a.x,l*a.y,l*a.z};
+}
+
+vector intersectionPoint(vector lineVector, vector linePoint, vector planeNormal, vector planePoint){
+
+	vector diff = subVectors(linePoint,planePoint);
+	
+	return addVectors(addVectors(diff,planePoint),scaleVector(-dotProduct(diff,planeNormal)/dotProduct(lineVector,planeNormal),lineVector));
+}
+
+
+void drawALL (node *blocks, GLuint VAOID[]);
 
 void printBal (node *T) {
 	if (!T)
@@ -72,6 +93,32 @@ void printBal (node *T) {
 	printBal (T->left);
 	printBal (T->right);
 }
+
+int searchElement (node *T, block data) {
+	while (T) {
+		if (compareBlocks(data, T->data))
+			T = T->left;
+		else if (compareBlocks(T->data, data))
+			T = T->right;
+		else
+			return 1;
+	}
+	return 0;
+}
+
+block getElement (node *T, block data) {
+	while (T) {
+		if (compareBlocks(data, T->data))
+			T = T->left;
+		else if (compareBlocks(T->data, data))
+			T = T->right;
+		else
+			return T->data;
+	}
+	return (block){-1, -1, -1, -1}	;
+}
+
+block firstBlock (node *T, ray r);
 
 int help = 0;
 
@@ -204,14 +251,6 @@ int main(void)
 	
 	node *chunk = NULL;
 	
-	//insertBlock (&chunk, (block){3, 0, 0, 1});
-	//insertBlock (&chunk, (block){4, 0, 0, 1});
-	//insertBlock (&chunk, (block){1, 0, 0, 1});
-	//insertBlock (&chunk, (block){2, 0, 0, 1});
-	
-	//removeBlock (&chunk, (block){2, 0, 0, 1});
-	
-	
 	insertBlock (&chunk, (block){0, 0, 0, 1});
 	insertBlock (&chunk, (block){1, 0, 0, 1});
 	insertBlock (&chunk, (block){-1, 0, 0, 1});
@@ -305,96 +344,6 @@ int main(void)
 	
 	glm::vec3 cubePositions[] =
 	{
-	glm::vec3(0.0f, 0.0f, 0.0f),
-	glm::vec3(1.0f, 0.0f, 0.0f),
-	glm::vec3(-1.0f, 0.0f, 0.0f),
-	glm::vec3(0.0f, 0.0f, 1.0f),
-	glm::vec3(1.0f, 0.0f, 1.0f),
-	glm::vec3(-1.0f, 0.0f, 1.0f),
-	glm::vec3(0.0f, 0.0f, -1.0f),
-	glm::vec3(1.0f, 0.0f, -1.0f),
-	glm::vec3(-1.0f, 0.0f, -1.0f),
-	
-	glm::vec3(-3.0f, 0.0f, 0.0f),
-	glm::vec3(-2.0f, 0.0f, 0.0f),
-	glm::vec3(-4.0f, 0.0f, 0.0f),
-	glm::vec3(-3.0f, 0.0f, 1.0f),
-	glm::vec3(-2.0f, 0.0f, 1.0f),
-	glm::vec3(-4.0f, 0.0f, 1.0f),
-	glm::vec3(-3.0f, 0.0f, -1.0f),
-	glm::vec3(-2.0f, 0.0f, -1.0f),
-	glm::vec3(-4.0f, 0.0f, -1.0f),
-	
-	glm::vec3(-3.0f, 0.0f, 3.0f),
-	glm::vec3(-2.0f, 0.0f, 3.0f),
-	glm::vec3(-4.0f, 0.0f, 3.0f),
-	glm::vec3(-3.0f, 0.0f, 4.0f),
-	glm::vec3(-2.0f, 0.0f, 4.0f),
-	glm::vec3(-4.0f, 0.0f, 4.0f),
-	glm::vec3(-3.0f, 0.0f, 2.0f),
-	glm::vec3(-2.0f, 0.0f, 2.0f),
-	glm::vec3(-4.0f, 0.0f, 2.0f),
-	
-	glm::vec3(0.0f, -1.0f, 0.0f),
-	glm::vec3(1.0f, -1.0f, 0.0f),
-	glm::vec3(-1.0f, -1.0f, 0.0f),
-	glm::vec3(0.0f, -1.0f, 1.0f),
-	glm::vec3(1.0f, -1.0f, 1.0f),
-	glm::vec3(-1.0f, -1.0f, 1.0f),
-	glm::vec3(0.0f, -1.0f, -1.0f),
-	glm::vec3(1.0f, -1.0f, -1.0f),
-	glm::vec3(-1.0f, -1.0f, -1.0f),
-	
-	glm::vec3(-3.0f, -1.0f, 0.0f),
-	glm::vec3(-2.0f, -1.0f, 0.0f),
-	glm::vec3(-4.0f, -1.0f, 0.0f),
-	glm::vec3(-3.0f, -1.0f, 1.0f),
-	glm::vec3(-2.0f, -1.0f, 1.0f),
-	glm::vec3(-4.0f, -1.0f, 1.0f),
-	glm::vec3(-3.0f, -1.0f, -1.0f),
-	glm::vec3(-2.0f, -1.0f, -1.0f),
-	glm::vec3(-4.0f, -1.0f, -1.0f),
-	
-	glm::vec3(-3.0f, -1.0f, 3.0f),
-	glm::vec3(-2.0f, -1.0f, 3.0f),
-	glm::vec3(-4.0f, -1.0f, 3.0f),
-	glm::vec3(-3.0f, -1.0f, 4.0f),
-	glm::vec3(-2.0f, -1.0f, 4.0f),
-	glm::vec3(-4.0f, -1.0f, 4.0f),
-	glm::vec3(-3.0f, -1.0f, 2.0f),
-	glm::vec3(-2.0f, -1.0f, 2.0f),
-	glm::vec3(-4.0f, -1.0f, 2.0f),
-	
-	glm::vec3(0.0f, 1.0f, 0.0f),
-	glm::vec3(1.0f, 1.0f, 0.0f),
-	glm::vec3(-1.0f, 1.0f, 0.0f),
-	glm::vec3(0.0f, 1.0f, 1.0f),
-	glm::vec3(1.0f, 1.0f, 1.0f),
-	glm::vec3(-1.0f, 1.0f, 1.0f),
-	glm::vec3(0.0f, 1.0f, -1.0f),
-	glm::vec3(1.0f, 1.0f, -1.0f),
-	glm::vec3(-1.0f, 1.0f, -1.0f),
-	
-	glm::vec3(-3.0f, 1.0f, 0.0f),
-	glm::vec3(-2.0f, 1.0f, 0.0f),
-	glm::vec3(-4.0f, 1.0f, 0.0f),
-	glm::vec3(-3.0f, 1.0f, 1.0f),
-	glm::vec3(-2.0f, 1.0f, 1.0f),
-	glm::vec3(-4.0f, 1.0f, 1.0f),
-	glm::vec3(-3.0f, 1.0f, -1.0f),
-	glm::vec3(-2.0f, 1.0f, -1.0f),
-	glm::vec3(-4.0f, 1.0f, -1.0f),
-	
-	glm::vec3(-3.0f, 1.0f, 3.0f),
-	glm::vec3(-2.0f, 1.0f, 3.0f),
-	glm::vec3(-4.0f, 1.0f, 3.0f),
-	glm::vec3(-3.0f, 1.0f, 4.0f),
-	glm::vec3(-2.0f, 1.0f, 4.0f),
-	glm::vec3(-4.0f, 1.0f, 4.0f),
-	glm::vec3(-3.0f, 1.0f, 2.0f),
-	glm::vec3(-2.0f, 1.0f, 2.0f),
-	glm::vec3(-4.0f, 1.0f, 2.0f),
-	
 	glm::vec3(-3.0f, 2.0f, 0.0f),
 	glm::vec3(-3.0f, 3.0f, 0.0f),
 	glm::vec3(-3.0f, 4.0f, 0.0f),
@@ -430,8 +379,6 @@ int main(void)
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 	
-
-	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, CUBE * sizeof(VAOID) / sizeof(GLuint), 0, GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, CUBE*0, CUBE, vertices);
@@ -464,8 +411,6 @@ int main(void)
 	glfwSetKeyCallback(window, closeWindow);
 	
 	float cameraSpeed = 0.05f;
-	
-	
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -512,10 +457,17 @@ int main(void)
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		    cameraSpeed -= 0.001f;
 		if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && help == 0) {
-		    removeBlock (&chunk, min(chunk));
-			help = 60;
-			printBal (chunk);
+		    ray r = initializeRay ((point3D){cameraPos.x, cameraPos.y, cameraPos.z}, (point3D){cameraFront.x, cameraFront.y, cameraFront.z});
+		    block aux = firstBlock(chunk, r);
+		    if (aux.id != -1)
+		    	removeBlock (&chunk, aux);
+			help = 5;
 		}
+		
+		if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+			if (!searchElement (chunk, (block){round(cameraPos.x), round(cameraPos.y)-2, round(cameraPos.z), 2}));
+				insertBlock (&chunk, (block){round(cameraPos.x), round(cameraPos.y)-2, round(cameraPos.z), 2});
+		}	
 		
 		if (help > 0)
 			help--;
@@ -542,6 +494,7 @@ int main(void)
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 		
 		drawALL (chunk, VAOID);
+
 		/*
 		glBindVertexArray(VAOID[0]);
 		for (int i = 0; i < 54; i++){
@@ -593,9 +546,16 @@ int main(void)
 	return 0;
 }
 
-
-
-
+ray initializeRay (vector origin, vector direction) {
+	ray aux;
+	aux.origin = origin;
+	aux.direction = direction;
+	aux.invDirection = (vector){1/direction.x, 1/direction.y, 1/direction.z};
+	aux.sign[0] = aux.invDirection.x < 0;
+	aux.sign[1] = aux.invDirection.y < 0;
+	aux.sign[2] = aux.invDirection.z < 0;
+	return aux;
+}
 
 const char* getShader (char *filePath, char type)
 {
@@ -680,6 +640,77 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     cameraFront = glm::normalize(direction);
 }
 
-int intersect (float *origin, float *position, float *direction, float range){
-	//socorro
+block firstBlock (node *T, ray r) {
+	vector aux = (vector){round(r.origin.x), round(r.origin.y), round(r.origin.z)};
+	
+	block UP = getElement(T, (block){aux.x, aux.y+1, aux.z, -1});
+	block DOWN = getElement(T, (block){aux.x, aux.y-1, aux.z, -1});
+	block UP2 = getElement(T, (block){aux.x, aux.y+2, aux.z, -1});
+	block DOWN2 = getElement(T, (block){aux.x, aux.y-2, aux.z, -1});
+	
+	if (UP.id != -1)
+		if (intersectTest((vector){aux.x, aux.y+1, aux.z}, r, 5))
+			return UP;
+	
+	if (DOWN.id != -1)
+		if (intersectTest((vector){aux.x, aux.y-1, aux.z}, r, 5))
+			return DOWN;
+			
+	
+	if (UP2.id != -1)
+		if (intersectTest((vector){aux.x, aux.y+2, aux.z}, r, 5))
+			return UP2;
+	
+	if (DOWN2.id != -1)
+		if (intersectTest((vector){aux.x, aux.y-2, aux.z}, r, 5))
+			return DOWN2;
+
+	return (block){-1, -1, -1, -1};
+}
+
+void drawALL (node *blocks, GLuint VAOID[]) {
+	if (!blocks)
+		return;
+	
+	model = glm::mat4 (1.0f);
+	model = glm::translate (model, glm::vec3 (blocks->data.x, blocks->data.y, blocks->data.z));
+	
+	//temporario, correto seria sem o -1
+	glBindVertexArray(VAOID[blocks->data.id-1]);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	
+	glDrawElements(GL_TRIANGLES, sizeof(GLuint)*36/sizeof(int), GL_UNSIGNED_INT, 0);
+	
+	drawALL (blocks->left, VAOID);
+	drawALL (blocks->right, VAOID);
+}
+
+int intersectTest (vector position, ray r, float range) {
+	
+	vector bounds[2] = {addVectors(position, (vector){-0.5, -0.5, -0.5}), addVectors(position, (vector){0.5, 0.5, 0.5})};
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	
+	tmin = (bounds[r.sign[0]].x - r.origin.x) * r.invDirection.x;
+	tmax = (bounds[1-r.sign[0]].x - r.origin.x) * r.invDirection.x;
+	
+	tymin = (bounds[r.sign[1]].y - r.origin.y) * r.invDirection.y;
+	tymax = (bounds[1-r.sign[1]].y - r.origin.y) * r.invDirection.y;
+	
+	if ((tmin > tymax) || (tymin > tmax))
+		return 0;
+	if (tymin > tmin)
+		tmin = tymin;
+	if (tymax < tmax)
+		tmax = tymax;
+	
+	tzmin = (bounds[r.sign[2]].z - r.origin.z) * r.invDirection.z;
+	tzmax = (bounds[1-r.sign[2]].z - r.origin.z) * r.invDirection.z;
+	
+	if ( (tmin > tzmax) || (tzmin > tmax) )
+		return 0;
+	if (tzmin > tmin)
+		tmin = tzmin;
+	if (tzmax < tmax)
+		tmax = tzmax;
+	return ((tmin < range) && (tmax > 0));
 }

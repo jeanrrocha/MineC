@@ -231,52 +231,46 @@ node *removeNode (node *T, block data, int *height) {
 		
 		if (*height == 1) {
 			T->bal++;
-			if (T->bal == 0) {
+			if (T->bal != 2) {
 				*height = 0;
 				return T;
-			} else if (T->bal == 2) {
-				if (T->right->bal == 1)
-					return rotDDremove(T, height);
-				else
+			} else {
+				if (T->right->bal == -1)
 					return rotDEremove(T, height);
+				return rotDDremove(T, height);
 			}
 		}
-
+		return T;
 	} else if (compareBlocks (T->data, data)) {
 		T->right = removeNode (T->right, data, height);
 
 		if (*height == 1) {
 			T->bal--;
-			if (T->bal == 0) {
+			if (T->bal != -2) {
 				*height = 0;
 				return T;
-			} else if (T->bal == -2) {
-				if (T->left->bal == -1)
-					return rotEEremove(T, height);
-				else
+			} else {
+				if (T->left->bal == 1)
 					return rotEDremove(T, height);
+				return rotEEremove(T, height);
 			}
 		}
+		return T;
 	} else {
 		if (!T->left && !T->right) {
 			*height = 1;
 			free (T);
 			return NULL;
-		} else if (!T->left && T->right) {
+		} else if (!T->left || !T->right) {
 			*height = 1;
-			node *aux = T->right;
-			free (T);
-			return aux;
-		} else if (T->left && !T->right) {
-			*height = 1;
-			node *aux = T->left;
+			node *aux = T->left ? T->left : T->right;
 			free (T);
 			return aux;
 		} else {
-			if (T->bal == -1)
-				return removeNode (T, max(T->left), height);
-			else
-				return removeNode (T, min(T->right), height);
+			block aux = T->bal == -1 ? max(T->left) : min(T->right);
+			T = removeNode (T, aux, height);
+			T->data = aux;
+			return T;
 		}
 	}
 	return T;
