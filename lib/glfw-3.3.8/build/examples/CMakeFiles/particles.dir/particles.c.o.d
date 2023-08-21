@@ -1,5 +1,5 @@
 examples/CMakeFiles/particles.dir/particles.c.o: \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/examples/particles.c \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/examples/particles.c \
  /usr/include/stdc-predef.h /usr/include/stdlib.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -61,7 +61,7 @@ examples/CMakeFiles/particles.dir/particles.c.o: \
  /usr/include/x86_64-linux-gnu/bits/time.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/tinycthread.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/tinycthread.h \
  /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/pthread.h \
  /usr/include/sched.h /usr/include/x86_64-linux-gnu/bits/sched.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
@@ -69,11 +69,11 @@ examples/CMakeFiles/particles.dir/particles.c.o: \
  /usr/include/x86_64-linux-gnu/bits/setjmp.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/getopt.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/linmath.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/gl.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/khrplatform.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/getopt.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/linmath.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/gl.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/khrplatform.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/include/GLFW/glfw3.h
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/include/GLFW/glfw3.h

@@ -40,6 +40,7 @@ void insertBlock (node**, block);
 node *removeNode (node*, block, int*);
 void removeBlock (node**, block);
 
+void clearChunk (node *);
 void destroyChunk (node*);
 
 #endif

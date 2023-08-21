@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = -D_GLFW_USE_CONFIG_H
 
-C_INCLUDES = -I/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/include -I/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/src -I/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/src
+C_INCLUDES = -I/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/include -I/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/src -I/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/src
 
 C_FLAGS = -fPIC -Wall -std=gnu99
 

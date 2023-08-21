@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/src
+# Install script for directory: /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -43,6 +43,6 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/src/libglfw3.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/src/libglfw3.a")
 endif()
 

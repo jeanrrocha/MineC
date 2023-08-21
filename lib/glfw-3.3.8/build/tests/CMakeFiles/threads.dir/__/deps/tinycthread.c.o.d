@@ -1,7 +1,7 @@
 tests/CMakeFiles/threads.dir/__/deps/tinycthread.c.o: \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/tinycthread.c \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/tinycthread.c \
  /usr/include/stdc-predef.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/tinycthread.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/tinycthread.h \
  /usr/include/time.h /usr/include/features.h \
  /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \

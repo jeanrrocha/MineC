@@ -1,8 +1,8 @@
 tests/CMakeFiles/events.dir/events.c.o: \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/tests/events.c \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/tests/events.c \
  /usr/include/stdc-predef.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/gl.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/khrplatform.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/gl.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/khrplatform.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -18,7 +18,7 @@ tests/CMakeFiles/events.dir/events.c.o: \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/include/GLFW/glfw3.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/include/GLFW/glfw3.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h /usr/include/stdio.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h \
  /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
@@ -58,4 +58,4 @@ tests/CMakeFiles/events.dir/events.c.o: \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
  /usr/include/string.h /usr/include/strings.h /usr/include/locale.h \
  /usr/include/x86_64-linux-gnu/bits/locale.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/getopt.h
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/getopt.h

@@ -285,6 +285,16 @@ void removeBlock (node **T, block data) {
 	*T = removeNode (*T, data, &height);
 }
 
+void clearChunk (node *T) {
+	if (!T)
+		return;
+	
+	destroyChunk (T->left);
+	destroyChunk (T->right);
+	
+	removeBlock (&T, T->data);
+}
+
 void destroyChunk (node *T) {
 	if (!T)
 		return;

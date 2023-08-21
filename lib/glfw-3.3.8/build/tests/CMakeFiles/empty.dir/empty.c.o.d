@@ -1,7 +1,7 @@
 tests/CMakeFiles/empty.dir/empty.c.o: \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/tests/empty.c \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/tests/empty.c \
  /usr/include/stdc-predef.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/tinycthread.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/tinycthread.h \
  /usr/include/time.h /usr/include/features.h \
  /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
@@ -46,14 +46,14 @@ tests/CMakeFiles/empty.dir/empty.c.o: \
  /usr/include/x86_64-linux-gnu/bits/setjmp.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/gl.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/khrplatform.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/gl.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/khrplatform.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/include/GLFW/glfw3.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/include/GLFW/glfw3.h \
  /usr/include/math.h /usr/include/x86_64-linux-gnu/bits/math-vector.h \
  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
  /usr/include/x86_64-linux-gnu/bits/floatn.h \

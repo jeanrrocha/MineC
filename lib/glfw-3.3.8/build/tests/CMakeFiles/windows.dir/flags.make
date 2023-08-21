@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = 
 
-C_INCLUDES = -I/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps -I/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/include
+C_INCLUDES = -I/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps -I/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/include
 
 C_FLAGS = -std=gnu99
 

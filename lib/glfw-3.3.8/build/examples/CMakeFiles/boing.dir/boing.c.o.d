@@ -1,5 +1,5 @@
 examples/CMakeFiles/boing.dir/boing.c.o: \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/examples/boing.c \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/examples/boing.c \
  /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -55,10 +55,10 @@ examples/CMakeFiles/boing.dir/boing.c.o: \
  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/gl.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/glad/khrplatform.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/gl.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/glad/khrplatform.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/include/GLFW/glfw3.h \
- /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/deps/linmath.h
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/include/GLFW/glfw3.h \
+ /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/deps/linmath.h

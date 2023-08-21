@@ -1,9 +1,9 @@
 
-if (NOT EXISTS "/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/install_manifest.txt")
-  message(FATAL_ERROR "Cannot find install manifest: \"/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/install_manifest.txt\"")
+if (NOT EXISTS "/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: \"/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/install_manifest.txt\"")
 endif()
 
-file(READ "/mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/install_manifest.txt" files)
+file(READ "/mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 
 foreach (file ${files})

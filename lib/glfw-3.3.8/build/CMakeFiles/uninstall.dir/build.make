@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8
+CMAKE_SOURCE_DIR = /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build
+CMAKE_BINARY_DIR = /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build
 
 # Utility rule file for uninstall.
 
@@ -67,7 +67,7 @@ include CMakeFiles/uninstall.dir/compiler_depend.make
 include CMakeFiles/uninstall.dir/progress.make
 
 CMakeFiles/uninstall:
-	/usr/bin/cmake -P /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/cmake_uninstall.cmake
+	/usr/bin/cmake -P /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/cmake_uninstall.cmake
 
 uninstall: CMakeFiles/uninstall
 uninstall: CMakeFiles/uninstall.dir/build.make
@@ -82,6 +82,6 @@ CMakeFiles/uninstall.dir/clean:
 .PHONY : CMakeFiles/uninstall.dir/clean
 
 CMakeFiles/uninstall.dir/depend:
-	cd /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8 /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8 /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/build/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8 /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8 /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/build/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/uninstall.dir/depend
 

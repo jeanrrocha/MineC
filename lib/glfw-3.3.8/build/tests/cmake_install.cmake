@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/c/Users/Jean/Documents/Study/MineC/lib/glfw-3.3.8/tests
+# Install script for directory: /mnt/c/Users/Jean/Documents/Study/mine/MineC/lib/a/glfw-3.3.8/tests
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
