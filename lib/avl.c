@@ -264,7 +264,10 @@ node *removeNode (node *T, block data, int *height) {
 		} else if (!T->left || !T->right) {
 			*height = 1;
 			node *aux = T->left ? T->left : T->right;
-			T->left ? T->left = NULL : T->right = NULL;
+			if (T->left)
+				T->left = NULL;
+			else
+				T->right = NULL;
 			free (T);
 			return aux;
 		} else {

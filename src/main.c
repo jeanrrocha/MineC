@@ -1,52 +1,102 @@
 #include <stdio.h>
 #include <avl.h>
-#include <cstdlib>
-#define GLEW_STATIC
-
-
-#include <glew.h>
-#include <glfw3.h>
-#include <glut.h>
-
-
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "glm/glm/glm.hpp"
-#include "glm/glm/gtc/matrix_transform.hpp"
-#include "glm/glm/gtc/type_ptr.hpp"
+#include <stdbool.h>
+
+#define GLBIND_IMPLEMENTATION
+#define GLFW_INCLUDE_NONE
+#include <glbind.h>
+#include <GLFW/glfw3.h>
 
 #define FRAGMENT 'f'
 #define VERTEX 'v'
 
+#define degToRad(angleInDegrees) ((angleInDegrees) * M_PI / 180.0)
+#define radToDeg(angleInRadians) ((angleInRadians) * 180.0 / M_PI)
+
+#ifndef M_PI
+#    define M_PI 3.14159265358979323846264338327950288
+#endif
+
+
+
 #define CUBE 192
-//CUBE = sizeof(dirt)
 
 const int windowWidth = 800;
 const int windowHeight = 800;
 const char* windowTitle = "MineC";
 
 typedef struct {
-	vector cameraPos;
-	vector cameraFront;
-	vector cameraUp;
-	vector direction;
+	union {
+		GLfloat col[3];
+		struct {
+			GLfloat x;
+			GLfloat y;
+			GLfloat z;
+		};
+	};
+} vec3;
+
+typedef struct {
+	union {
+		GLfloat col[4];
+		struct {
+			GLfloat w;
+			GLfloat x;
+			GLfloat y;
+			GLfloat z;
+		};
+	};
+} vec4;
+
+typedef struct {
+	
+	union {
+		vec4 row[4];
+		struct {
+			GLfloat ww;
+			GLfloat wx;
+			GLfloat wy;
+			GLfloat wz;
+			GLfloat xw;
+			GLfloat xx;
+			GLfloat xy;
+			GLfloat xz;
+			GLfloat yw;
+			GLfloat yx;
+			GLfloat yy;
+			GLfloat yz;
+			GLfloat zw;
+			GLfloat zx;
+			GLfloat zy;
+			GLfloat zz;
+		};
+		struct {
+			vec4 w;
+			vec4 x;
+			vec4 y;
+			vec4 z;
+		};
+	};
+} mat4;
+
+typedef struct {
+	vec3 cameraPos;
+	vec3 cameraFront;
+	vec3 cameraUp;
+	vec3 direction;
+	mat4 view;
+	mat4 model;
+	mat4 proj;
 } Camera;
 
 typedef struct {
 	Camera camera;
 } Player;
 
-
-
-
-
-glm::vec3 cameraPos = glm::vec3(0.0f, 3.0f, 0.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-glm::vec3 direction	= glm::vec3(0.0f, 0.0f, 0.0f);
-glm::mat4 model = glm::mat4(1.0f);
-glm::mat4 view = glm::mat4(1.0f);
-glm::mat4 proj = glm::mat4(1.0f);
+Player player;
 
 GLfloat yaw = -90.0f;
 GLfloat pitch = 0.0f;
@@ -58,21 +108,21 @@ GLuint VAO, VBO, EBO;
 GLuint shaderProgram;
 GLuint outlineShaderProgram;
 
-vector blocksInRange[1331] = {(vector){0, 0, 0}};
+vec3 blocksInRange[1331] = {(vec3){0, 0, 0}};
 
 typedef struct {
-	vector origin;
-	vector direction;
-	vector invDirection;
+	vec3 origin;
+	vec3 direction;
+	vec3 invDirection;
 	int sign[3];
 } ray;
 
-block vecToBlock (vector T);
-ray initializeRay (vector origin, vector direction);
-int intersect (vector position, ray r, float range);
-int closestToZero (vector first, vector second);
+block vecToBlock (vec3 T);
+ray initializeRay (vec3 origin, vec3 direction);
+int intersect (vec3 position, ray r, float range);
+int closestToZero (vec3 first, vec3 second);
 block firstBlock (node *T, ray r);
-int isBlock (node *T, vector pos);
+int isBlock (node *T, vec3 pos);
 const char* getShader (char *filePath, char type);
 void closeWindow (GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
@@ -81,28 +131,196 @@ void drawALL (node *blocks, GLuint shaders[], GLuint VAOID[], ray r);
 void fillSkyBlock (node **chunk);
 
 
-vector addVectors(vector a,vector b){
-	return (vector){a.x+b.x,a.y+b.y,a.z+b.z};
+vec3 scale_vec3 (vec3 vector, double x) {
+	
+	vector.x *= x;
+	vector.y *= x;
+	vector.z *= x;
+	
+	return vector;
 }
 
-vector subVectors(vector a,vector b){
-	return (vector){a.x-b.x,a.y-b.y,a.z-b.z};
+vec4 scale_vec4 (vec4 vector, double x) {
+	
+	vector.w *= x;
+	vector.x *= x;
+	vector.y *= x;
+	vector.z *= x;
+	
+	return vector;
 }
 
-double dotProduct(vector a,vector b){
-	return a.x*b.x + a.y*b.y + a.z*b.z;
+vec3 sum_vec3 (vec3 vector1, vec3 vector2) {
+	
+	vector1.x += vector2.x;
+	vector1.y += vector2.y;
+	vector1.z += vector2.z;
+	
+	return vector1;
 }
 
-vector scaleVector(double l,vector a){
-	return (vector){l*a.x,l*a.y,l*a.z};
+vec4 sum_vec4 (vec4 vector1, vec4 vector2) {
+	
+	vector1.w += vector2.w;
+	vector1.x += vector2.x;
+	vector1.y += vector2.y;
+	vector1.z += vector2.z;
+	
+	return vector1;
 }
 
-vector normalizeVector (vector a){
-	float w = sqrt (a.x * a.x + a.y * a.y + a.z * a.z);
-	return (vector){a.x/w, a.y/w, a.z/w};
+vec3 sub_vec3 (vec3 vector1, vec3 vector2) {
+	
+	vector1.x -= vector2.x;
+	vector1.y -= vector2.y;
+	vector1.z -= vector2.z;
+	
+	return vector1;
+}
+
+vec4 sub_vec4 (vec4 vector1, vec4 vector2) {
+	
+	vector1.w -= vector2.w;
+	vector1.x -= vector2.x;
+	vector1.y -= vector2.y;
+	vector1.z -= vector2.z;
+	
+	return vector1;
+}
+
+vec3 multiply_vec3 (vec3 vector1, vec3 vector2) {
+	
+	vector1.x *= vector2.x;
+	vector1.y *= vector2.y;
+	vector1.z *= vector2.z;
+	
+	return vector1;
+}
+
+vec4 multiply_vec4 (vec4 vector1, vec4 vector2) {
+	
+	vector1.w *= vector2.w;
+	vector1.x *= vector2.x;
+	vector1.y *= vector2.y;
+	vector1.z *= vector2.z;
+	
+	return vector1;
 }
 
 
+double dot_vec3 (vec3 vector1, vec3 vector2) {
+	return vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
+}
+
+double dot_vec4 (vec4 vector1, vec4 vector2) {
+	return vector1.w * vector2.w + vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
+}
+
+double norm_vec3 (vec3 vector) {
+	return sqrt (dot_vec3 (vector, vector));
+}
+
+double norm_vec4 (vec4 vector) {
+	return sqrt (dot_vec4 (vector, vector));
+}
+
+vec3 normalize_vec3 (vec3 vector) {
+	return scale_vec3 (vector, 1 / norm_vec3 (vector));
+}
+
+vec4 normalize_vec4 (vec4 vector) {
+	return scale_vec4 (vector, 1 / norm_vec4 (vector));
+}
+
+vec3 cross_vec3 (vec3 vector1, vec3 vector2) {
+	vec3 out;
+	
+	out.x = vector1.y*vector2.z - vector1.z*vector2.y;
+	out.y = vector1.z*vector2.x - vector1.x*vector2.z;
+	out.z = vector1.x*vector2.y - vector1.y*vector2.x;
+	
+	return out;
+}
+
+mat4 multiply_mat4 (mat4 matrix1, mat4 matrix2) {
+	mat4 out;
+	
+	for(int i = 0; i < 4; i++) {    
+		for(int j = 0; j < 4; j++) {    
+			out.row[i].col[j] = 0;
+			for(int k=0; k < 4 ; k++) {    
+				out.row[i].col[j] += matrix1.row[i].col[k] * matrix2.row[k].col[j];    
+			}
+		}
+	}
+
+	return out;
+}
+
+mat4 lookAt_mat4 (vec3 from, vec3 to, vec3 up) {
+	
+	mat4 out = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	
+	vec3 forward = sub_vec3 (from, to);
+	forward = normalize_vec3 (forward);
+	
+	vec3 right = cross_vec3 (up, forward);
+	right = normalize_vec3 (right);
+	
+	vec3 newUp = cross_vec3 (forward, right);
+	
+	out.ww = right.x;
+	out.wx = newUp.x;
+	out.wy = forward.x;
+	
+	out.xw = right.y;
+	out.xx = newUp.y;
+	out.xy = forward.y;
+	
+	out.yw = right.z;
+	out.yx = newUp.z;
+	out.yy = forward.z;
+	
+	out.zw = dot_vec3 (right, scale_vec3 (from, -1));
+	out.zx = dot_vec3 (newUp, scale_vec3 (from, -1));
+	out.zy = dot_vec3 (forward, scale_vec3 (from, -1));
+	
+	return out;
+}
+
+mat4 perspective_mat4 (float angle, float ratio, float distNear, float distFar) {
+	mat4 out = (mat4){(vec4){0.0, 0.0, 0.0, 0.0}, (vec4){0.0, 0.0, 0.0, 0.0}, (vec4){0.0, 0.0, 0.0, 0.0}, (vec4){0.0, 0.0, 0.0, 0.0}};
+	
+	float tan_half_angle;
+	
+	tan_half_angle = tan(angle / 2);
+	
+	out.ww = (1 / (ratio * tan_half_angle));
+	out.xx = (1 / tan_half_angle);
+	out.yy = ((-(distFar + distNear)) / (distFar - distNear));
+	out.yz = -1;
+	out.zy = ((-(2 * distFar * distNear)) / (distFar - distNear));
+	
+	return out;
+}
+
+mat4 translate_mat4_vec3 (mat4 matrix, vec3 vector) {
+	
+	vec4 aux = (vec4){vector.x, vector.y, vector.z, 1};
+	vec4 a = (vec4){matrix.ww, matrix.xw, matrix.yw, matrix.zw};
+	matrix.zw = dot_vec4 (a, aux);
+	
+	a = (vec4){matrix.wx, matrix.xx, matrix.yx, matrix.zx};
+	matrix.zx = dot_vec4 (a, aux);
+	
+	a = (vec4){matrix.wy, matrix.xy, matrix.yy, matrix.zy};
+	matrix.zy = dot_vec4 (a, aux);
+	
+	a = (vec4){matrix.wz, matrix.xz, matrix.yz, matrix.zz};
+	matrix.zz = dot_vec4 (a, aux);
+	
+	return matrix;
+}
 
 void printBal (node *T) {
 	if (!T)
@@ -141,18 +359,25 @@ block getElement (node *T, block data) {
 
 int help = 0;
 GLuint outlineVAO[1] = {0};
+
+
 int main(void)
 {	
+	
+	player.camera.cameraPos = (vec3){0.0, 3.0, 0.0};
+	player.camera.cameraFront = (vec3){0.0, 0.0, -1.0};
+	player.camera.cameraUp = (vec3){0.0, 1.0, 0.0};
+	player.camera.direction = (vec3){0.0, 0.0, 0.0};
+	player.camera.view = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	player.camera.proj = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+
+	GLenum result = glbInit(NULL, NULL);
+	
+	/****************************************************/
+	/* Inicialianzo o GLFW e a janela */
+	
 	GLFWwindow* window;
-	
-	const char *vertexShaderSource = getShader("default.shader", VERTEX);
-	//printf ("%s", vertexShaderSource);
-	const char *vertexShaderOutline = getShader("outline.shader", VERTEX);
-	
-	
-	const char *fragmentShaderSource = getShader("default.shader", FRAGMENT);
-	//printf ("%s", fragmentShaderSource);
-	const char *fragmentShaderOutline = getShader("outline.shader", FRAGMENT);
 	
 	if (!glfwInit()){
 		printf ("Failed to initialize GLFW.\n");
@@ -167,13 +392,20 @@ int main(void)
 	}
 	
 	glfwMakeContextCurrent(window);
-	
-	if (glewInit() != GLEW_OK){
-		printf ("Failed to initialize GLEW\n");
-		return -1;
-	}
-	
 	glViewport(0, 0, windowWidth, windowHeight);
+	
+	/* FIM */
+	/****************************************************/
+	
+	
+	
+	/****************************************************/
+	/* Inicializando as Shaders */
+	
+	const char *vertexShaderSource = getShader("default.shader", VERTEX);
+	const char *vertexShaderOutline = getShader("outline.shader", VERTEX);
+	const char *fragmentShaderSource = getShader("default.shader", FRAGMENT);
+	const char *fragmentShaderOutline = getShader("outline.shader", FRAGMENT);
 	
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	GLuint outlineVertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -207,6 +439,12 @@ int main(void)
 	glDeleteShader(fragmentShader);
 	glDeleteShader(outlineVertexShader);
 	glDeleteShader(outlineFragmentShader);
+	
+	/* FIM */
+	/****************************************************/
+	
+	//glDeleteProgram(shaderProgram);
+	//glDeleteProgram(outlineShaderProgram);
 
 	GLfloat bedrock[] =
 	{    
@@ -391,36 +629,6 @@ int main(void)
 	
 	fillSkyBlock (&chunk);
 	
-	glm::vec3 cubePositions[] =
-	{
-	glm::vec3(-3.0f, 2.0f, 0.0f),
-	glm::vec3(-3.0f, 3.0f, 0.0f),
-	glm::vec3(-3.0f, 4.0f, 0.0f),
-	glm::vec3(-3.0f, 5.0f, 0.0f),
-	glm::vec3(-3.0f, 6.0f, 0.0f),
-	
-	glm::vec3(-2.0f, 6.0f, 0.0f),
-	glm::vec3(-4.0f, 6.0f, 0.0f),
-	glm::vec3(-3.0f, 6.0f, 1.0f),
-	glm::vec3(-2.0f, 6.0f, 1.0f),
-	glm::vec3(-4.0f, 6.0f, 1.0f),
-	glm::vec3(-3.0f, 6.0f, -1.0f),
-	glm::vec3(-2.0f, 6.0f, -1.0f),
-	glm::vec3(-4.0f, 6.0f, -1.0f),
-	
-	glm::vec3(-3.0f, 7.0f, 0.0f),
-	glm::vec3(-2.0f, 7.0f, 0.0f),
-	glm::vec3(-4.0f, 7.0f, 0.0f),
-	glm::vec3(-3.0f, 7.0f, 1.0f),
-	glm::vec3(-2.0f, 7.0f, 1.0f),
-	glm::vec3(-4.0f, 7.0f, 1.0f),
-	glm::vec3(-3.0f, 7.0f, -1.0f),
-	glm::vec3(-2.0f, 7.0f, -1.0f),
-	glm::vec3(-4.0f, 7.0f, -1.0f),
-	
-	glm::vec3(-3.0f, 8.0f, 0.0f)
-	};
-	
 	GLuint VAOID[5] = {0};
 	
 	
@@ -456,9 +664,6 @@ int main(void)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	
-	//GLint size = 0;
-	//glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
 
 	for (int i = 0; i < sizeof(VAOID) / sizeof(GLuint); i++){
 		glBindVertexArray(VAOID[i]);
@@ -484,15 +689,13 @@ int main(void)
 				blocksInRange[pos++].z = k;
 			}
 	
-	for (int i = 0; i < 1331; i++)
-		for (int j = 0; j < 1331; j++)
+	for (int i = 0; i < 11 * 11 * 11; i++)
+		for (int j = 0; j < 11 * 11 * 11; j++)
 			if (closestToZero(blocksInRange[i], blocksInRange[j])) {
-				vector aux = blocksInRange[i];
+				vec3 aux = blocksInRange[i];
 				blocksInRange[i] = blocksInRange[j];
 				blocksInRange[j] = aux;
 			}
-	
-	
 	
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
@@ -501,27 +704,27 @@ int main(void)
 	glfwSetKeyCallback(window, closeWindow);
 	
 	float cameraSpeed = 0.01f;
-	Player player;
 	
 	while (!glfwWindowShouldClose(window))
 	{
 		glClearColor(0.5059f, 0.8314f, 0.9804f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		glUseProgram(shaderProgram);
-		
-		model = glm::mat4(1.0f);
-		view = glm::mat4(1.0f);
-		proj = glm::mat4(1.0f);
+		player.camera.view = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+		player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+		player.camera.proj = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
 		
 		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 		    cameraSpeed = 0.1f;
 		
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
-			glm::vec3 aux = cameraFront;
+			vec3 aux = player.camera.cameraFront;
+			
 			aux.y = 0;
-			aux = glm::normalize(aux);
+			
+			aux = normalize_vec3 (aux);
+			
 			
 			int dirX = 0, dirZ = 0;
 			
@@ -537,55 +740,61 @@ int main(void)
 			else if (aux.z < 0)
 				dirZ = -a;
 			
-			aux *= cameraSpeed;
+			aux = scale_vec3 (aux, cameraSpeed);
 			
-			vector sumDirectionX = (vector){aux.x, aux.y, 0};
-			vector sumDirectionZ = (vector){0, aux.y, aux.z};
-			vector aux2 = (vector){cameraPos.x, cameraPos.y, cameraPos.z};
+			vec3 sumDirectionX = (vec3){aux.x, aux.y, 0};
+			vec3 sumDirectionZ = (vec3){0, aux.y, aux.z};
+			vec3 aux2 = player.camera.cameraPos;
 			
-			//if (isBlock (chunk, addVectors(aux2, sumDirectionX)))
-			//	aux.x = 0;
-			
-			//if (isBlock (chunk, addVectors(aux2, sumDirectionZ)))
-			//	aux.z = 0;
-			
-			if (isBlock (chunk, (vector){cameraPos.x, cameraPos.y-0.5, cameraPos.z}) ||
-				isBlock (chunk, (vector){cameraPos.x, cameraPos.y-1.5, cameraPos.z}))
+			if (isBlock (chunk, (vec3){player.camera.cameraPos.x, player.camera.cameraPos.y-0.5, player.camera.cameraPos.z}) ||
+				isBlock (chunk, (vec3){player.camera.cameraPos.x, player.camera.cameraPos.y-1.5, player.camera.cameraPos.z})) {
 				aux.x = 0;
-			
-			if (isBlock (chunk, (vector){cameraPos.x, cameraPos.y-0.5, cameraPos.z}) ||
-				isBlock (chunk, (vector){cameraPos.x, cameraPos.y-1.5, cameraPos.z}))
 				aux.z = 0;
-			
-			cameraPos += aux;
-			
-			player.camera.cameraPos = addVectors (player.camera.cameraPos, scaleVector(cameraSpeed, normalizeVector (player.camera.cameraFront)));
-			
+				}
+
+			player.camera.cameraPos = sum_vec3 (player.camera.cameraPos, aux);
 		}
 		
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		{
-			glm::vec3 aux = cameraFront;
+			vec3 aux = player.camera.cameraFront;
+			
 			aux.y = 0;
-			aux = glm::normalize(aux);
 			
-			cameraPos -= cameraSpeed * aux;
+			aux = normalize_vec3 (aux);
+			aux = scale_vec3 (aux, cameraSpeed);
 			
-			player.camera.cameraPos = subVectors (player.camera.cameraPos, scaleVector(cameraSpeed, normalizeVector (player.camera.cameraFront)));
+			player.camera.cameraPos = sub_vec3 (player.camera.cameraPos, aux);
 		}
 		
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		    cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+			
+			vec3 aux;
+			
+			aux = cross_vec3 (player.camera.cameraFront, player.camera.cameraUp);
+			aux = normalize_vec3 (aux);
+			aux = scale_vec3 (aux, cameraSpeed);
+			
+			player.camera.cameraPos = sub_vec3 (player.camera.cameraPos, aux);
+			
+		}
 		
-		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		    cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+			vec3 aux;
+			
+			aux = cross_vec3 (player.camera.cameraFront, player.camera.cameraUp);
+			aux = normalize_vec3 (aux);
+			aux = scale_vec3 (aux, cameraSpeed);
+			
+			player.camera.cameraPos = sum_vec3 (player.camera.cameraPos, aux);
+		}
 		
-		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		    cameraPos += cameraSpeed * cameraUp;
-		
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+			player.camera.cameraPos = sum_vec3 (player.camera.cameraPos, scale_vec3 (player.camera.cameraUp, cameraSpeed));
+		}
 		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-		    if (!isBlock (chunk, (vector){cameraPos.x, cameraPos.y-1.81, cameraPos.z}))
-				cameraPos -= cameraSpeed * cameraUp;
+		    if (!isBlock (chunk, (vec3){player.camera.cameraPos.x, player.camera.cameraPos.y-1.81, player.camera.cameraPos.z}))
+				player.camera.cameraPos = sub_vec3 (player.camera.cameraPos, scale_vec3 (player.camera.cameraUp, cameraSpeed));
 		}
 		
 		if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
@@ -594,7 +803,7 @@ int main(void)
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		    cameraSpeed -= 0.001f;
 		
-		ray r = initializeRay ((point3D){cameraPos.x, cameraPos.y, cameraPos.z}, (point3D){cameraFront.x, cameraFront.y, cameraFront.z});
+		ray r = initializeRay (player.camera.cameraPos, player.camera.cameraFront);
 		
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && help == 0) {
 		    block aux = firstBlock(chunk, r);
@@ -605,48 +814,48 @@ int main(void)
 		
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && help == 0) {
 		    
-			vector up = {0, 1, 0};
-			vector down = {0, -1, 0};
-			vector right = {1, 0, 0};
-			vector left = {-1, 0, 0};
-			vector front = {0, 0, 1};
-			vector back = {0, 0, -1};
+			vec3 up = {0, 1, 0};
+			vec3 down = {0, -1, 0};
+			vec3 right = {1, 0, 0};
+			vec3 left = {-1, 0, 0};
+			vec3 front = {0, 0, 1};
+			vec3 back = {0, 0, -1};
 			
 			block bAux = firstBlock(chunk, r);
 		    
-			vector aux = {bAux.x, bAux.y, bAux.z};
+			vec3 aux = {bAux.x, bAux.y, bAux.z};
 			
 			block posBlock = vecToBlock (aux);
 			
 			
-			if (!isBlock (chunk, addVectors (aux, up)) && intersect(addVectors (aux, up), r, 5) && cameraPos.y > aux.y+0.5) {
+			if (!isBlock (chunk, sum_vec3 (aux, up)) && intersect(sum_vec3 (aux, up), r, 5) && player.camera.cameraPos.y > aux.y+0.5) {
 				
-				posBlock = vecToBlock (addVectors (aux, up));
+				posBlock = vecToBlock (sum_vec3 (aux, up));
 				posBlock.id = 1;
 				
-			} else if (!isBlock (chunk, addVectors (aux, down)) && intersect(addVectors (aux, down), r, 5) && cameraPos.y < aux.y-0.5) {
+			} else if (!isBlock (chunk, sum_vec3 (aux, down)) && intersect(sum_vec3 (aux, down), r, 5) && player.camera.cameraPos.y < aux.y-0.5) {
 				
-				posBlock = vecToBlock (addVectors (aux, down));
+				posBlock = vecToBlock (sum_vec3 (aux, down));
 				posBlock.id = 1;
 				
-			} else if (!isBlock (chunk, addVectors (aux, right)) &&  intersect(addVectors (aux, right), r, 5) && cameraPos.x > aux.x+0.5) {
+			} else if (!isBlock (chunk, sum_vec3 (aux, right)) &&  intersect(sum_vec3 (aux, right), r, 5) && player.camera.cameraPos.x > aux.x+0.5) {
 				
-				posBlock = vecToBlock (addVectors (aux, right));
+				posBlock = vecToBlock (sum_vec3 (aux, right));
 				posBlock.id = 1;
 				
-			} else if (!isBlock (chunk, addVectors (aux, left)) &&  intersect(addVectors (aux, left), r, 5) && cameraPos.x < aux.x-0.5) {
+			} else if (!isBlock (chunk, sum_vec3 (aux, left)) &&  intersect(sum_vec3 (aux, left), r, 5) && player.camera.cameraPos.x < aux.x-0.5) {
 				
-				posBlock = vecToBlock (addVectors (aux, left));
+				posBlock = vecToBlock (sum_vec3 (aux, left));
 				posBlock.id = 1;
 			 
-			} else if (!isBlock (chunk, addVectors (aux, front)) &&  intersect(addVectors (aux, front), r, 5) && cameraPos.z > aux.z+0.5) {
+			} else if (!isBlock (chunk, sum_vec3 (aux, front)) &&  intersect(sum_vec3 (aux, front), r, 5) && player.camera.cameraPos.z > aux.z+0.5) {
 				
-				posBlock = vecToBlock (addVectors (aux, front));
+				posBlock = vecToBlock (sum_vec3 (aux, front));
 				posBlock.id = 1;
 			
-			} else if (!isBlock (chunk, addVectors (aux, back)) &&  intersect(addVectors (aux, back), r, 5) && cameraPos.z < aux.z-0.5) {
+			} else if (!isBlock (chunk, sum_vec3 (aux, back)) &&  intersect(sum_vec3 (aux, back), r, 5) && player.camera.cameraPos.z < aux.z-0.5) {
 				
-				posBlock = vecToBlock (addVectors (aux, back));
+				posBlock = vecToBlock (sum_vec3 (aux, back));
 				posBlock.id = 1;
 				
 			}
@@ -660,12 +869,9 @@ int main(void)
 		if (help > 0)
 			help--;
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-			cameraPos		= glm::vec3(0.0f, 3.5f, 0.0f);
-			cameraFront		= glm::vec3(0.0f, 0.0f, -1.0f);
-			cameraUp		= glm::vec3(0.0f, 1.0f, 0.0f);
-			player.camera.cameraPos = (vector){0.0f, 3.5f, 0.0f};
-			player.camera.cameraFront = (vector){0.0f, 0.0f, -1.0f};
-			player.camera.cameraUp = (vector){0.0f, 1.0f, 0.0f};
+			player.camera.cameraPos = (vec3){0.0f, 3.5f, 0.0f};
+			player.camera.cameraFront = (vec3){0.0f, 0.0f, -1.0f};
+			player.camera.cameraUp = (vec3){0.0f, 1.0f, 0.0f};
 			lastX = 400;
 			lastY = 400;
 			yaw = -90.0f;
@@ -674,10 +880,10 @@ int main(void)
 			fillSkyBlock (&chunk);
 		}
 		cameraSpeed = 0.05f;
-		    		
-
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		proj = glm::perspective(glm::radians(90.0f), (float)(windowWidth/windowHeight), 0.2f, 100.0f);
+		
+		player.camera.view = lookAt_mat4 (player.camera.cameraPos, sum_vec3 (player.camera.cameraPos, player.camera.cameraFront), player.camera.cameraUp);
+		
+		player.camera.proj = perspective_mat4 ((float)degToRad(90.f), (float)(windowWidth/windowHeight), 0.2f, 600.0f);
 		
 		GLuint shaders[] = {shaderProgram, outlineShaderProgram};
 		
@@ -697,11 +903,11 @@ int main(void)
 	return 0;
 }
 
-ray initializeRay (vector origin, vector direction) {
+ray initializeRay (vec3 origin, vec3 direction) {
 	ray aux;
 	aux.origin = origin;
 	aux.direction = direction;
-	aux.invDirection = (vector){1/direction.x, 1/direction.y, 1/direction.z};
+	aux.invDirection = (vec3){1/direction.x, 1/direction.y, 1/direction.z};
 	aux.sign[0] = aux.invDirection.x < 0;
 	aux.sign[1] = aux.invDirection.y < 0;
 	aux.sign[2] = aux.invDirection.z < 0;
@@ -784,14 +990,14 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
         pitch = 89.9f;
     if(pitch < -89.9f)
         pitch = -89.9f;
-
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(direction);
+	
+	player.camera.cameraFront.x = cos(degToRad(yaw)) * cos(degToRad(pitch));
+	player.camera.cameraFront.y = sin(degToRad(pitch));
+	player.camera.cameraFront.z = sin(degToRad(yaw)) * cos(degToRad(pitch));
+	player.camera.cameraFront = normalize_vec3 (player.camera.cameraFront);
 }
 
-int closestToZero (vector first, vector second) {
+int closestToZero (vec3 first, vec3 second) {
 	
 	int aux = abs(first.x) + abs(first.y) + abs(first.z);
 	int aux2 = abs(second.x) + abs(second.y) + abs(second.z);
@@ -800,12 +1006,12 @@ int closestToZero (vector first, vector second) {
 }
 
 block firstBlock (node *T, ray r) {
-	vector base = (vector){round(r.origin.x), round(r.origin.y), round(r.origin.z)};
-	vector aux = base;
+	vec3 base = (vec3){round(r.origin.x), round(r.origin.y), round(r.origin.z)};
+	vec3 aux = base;
 	block b;
 
 	for (int i = 0; i < 1331; i++, aux = base) {
-		aux = addVectors(aux, blocksInRange[i]);
+		aux = sum_vec3(aux, blocksInRange[i]);
 		b = getElement (T, vecToBlock(aux));
 		
 		if (intersect(aux, r, 5) && b.id != -1) {
@@ -817,61 +1023,72 @@ block firstBlock (node *T, ray r) {
 }
 
 void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]);
+void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]);
 
 void drawALL (node *blocks, GLuint *shaders, GLuint *VAOID, ray r) {
-	
-	int viewLoc = glGetUniformLocation(shaders[0], "view");
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	int projLoc = glGetUniformLocation(shaders[0], "proj");
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
-	
-	drawAllBlocks (blocks, shaders[0], VAOID);
+
+	drawBlocks (blocks, shaders[0], VAOID);
 	
 	block first = firstBlock (blocks, r);
 	if (first.id != -1)
 		drawBlockOutline (first, shaders[1], VAOID);
 	
-	
 }
 
 void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]) {
+	
+	glUseProgram(shader);
+	
+	int viewLoc = glGetUniformLocation(shader, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &player.camera.view.ww);
+	
+	int projLoc = glGetUniformLocation(shader, "proj");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &player.camera.proj.ww);
+	
+	
+	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {T.x, T.y, T.z});
+	
+	
 	int modelLoc = glGetUniformLocation(shader, "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	
-	model = glm::mat4 (1.0f);
-	model = glm::translate (model, glm::vec3 (T.x, T.y, T.z));
-	
 	glBindVertexArray(outlineVAO[0]);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
 	
 	glClear(GL_DEPTH_BUFFER_BIT);
-	//glDisable(GL_DEPTH_TEST);
 	glDrawElements(GL_TRIANGLES, 144, GL_UNSIGNED_INT, 0);
-	//glEnable(GL_DEPTH_TEST);
 }
 
 void drawAllBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
 	if (!blocks)
 		return;
 	
+	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {blocks->data.x, blocks->data.y, blocks->data.z});
+	
 	int modelLoc = glGetUniformLocation(shader, "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	
-	model = glm::mat4 (1.0f);
-	model = glm::translate (model, glm::vec3 (blocks->data.x, blocks->data.y, blocks->data.z));
-	
 	glBindVertexArray(VAOID[blocks->data.id]);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
+
 	glDrawElements(GL_TRIANGLES, sizeof(GLuint)*36/sizeof(int), GL_UNSIGNED_INT, 0);
 	
 	drawAllBlocks (blocks->left, shader, VAOID);
 	drawAllBlocks (blocks->right, shader, VAOID);
 }
 
-int intersect (vector position, ray r, float range) {
+void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
+	glUseProgram(shader);
 	
-	vector bounds[2] = {addVectors(position, (vector){-0.5, -0.5, -0.5}), addVectors(position, (vector){0.5, 0.5, 0.5})};
+	int viewLoc = glGetUniformLocation(shader, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &player.camera.view.ww);
+	int projLoc = glGetUniformLocation(shader, "proj");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &player.camera.proj.ww);
+	
+	drawAllBlocks (blocks, shader, VAOID);
+}
+
+int intersect (vec3 position, ray r, float range) {
+	
+	vec3 bounds[2] = {sum_vec3(position, (vec3){-0.5, -0.5, -0.5}), sum_vec3(position, (vec3){0.5, 0.5, 0.5})};
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	
 	tmin = (bounds[r.sign[0]].x - r.origin.x) * r.invDirection.x;
@@ -900,11 +1117,11 @@ int intersect (vector position, ray r, float range) {
 	return ((tmin < range) && (tmax > 0.0));
 }
 
-block vecToBlock (vector T) {
+block vecToBlock (vec3 T) {
 	return (block){round(T.x), round(T.y), round(T.z), -1};
 }
 
-int isBlock (node *T, vector pos) {
+int isBlock (node *T, vec3 pos) {
 	if (getElement(T, vecToBlock(pos)).id == -1)
 		return 0;
 	return 1;

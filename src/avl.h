@@ -5,7 +5,13 @@ typedef struct {
 	double x;
 	double y;
 	double z;
-} vector;
+} vec3;
+
+typedef struct {
+	float x;
+	float y;
+	float z;
+} vec3F;
 
 typedef vector point3D;
 
