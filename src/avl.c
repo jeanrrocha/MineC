@@ -264,6 +264,10 @@ node *removeNode (node *T, block data, int *height) {
 		} else if (!T->left || !T->right) {
 			*height = 1;
 			node *aux = T->left ? T->left : T->right;
+			if (T->left)
+				T->left = NULL;
+			else
+				T->right = NULL;
 			free (T);
 			return aux;
 		} else {
@@ -285,14 +289,15 @@ void removeBlock (node **T, block data) {
 	*T = removeNode (*T, data, &height);
 }
 
-void clearChunk (node *T) {
-	if (!T)
+void clearChunk (node **T) {
+	if (!*T)
 		return;
 	
-	destroyChunk (T->left);
-	destroyChunk (T->right);
+	destroyChunk ((*T)->left);
+	destroyChunk ((*T)->right);
 	
-	removeBlock (&T, T->data);
+	free (*T);
+	*T = NULL;
 }
 
 void destroyChunk (node *T) {

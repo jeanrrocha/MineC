@@ -402,10 +402,10 @@ int main(void)
 	/****************************************************/
 	/* Inicializando as Shaders */
 	
-	const char *vertexShaderSource = getShader("default.shader", VERTEX);
-	const char *vertexShaderOutline = getShader("outline.shader", VERTEX);
-	const char *fragmentShaderSource = getShader("default.shader", FRAGMENT);
-	const char *fragmentShaderOutline = getShader("outline.shader", FRAGMENT);
+	const char *vertexShaderSource = getShader("./resources/shaders/default.shader", VERTEX);
+	const char *vertexShaderOutline = getShader("./resources/shaders/outline.shader", VERTEX);
+	const char *fragmentShaderSource = getShader("./resources/shaders/default.shader", FRAGMENT);
+	const char *fragmentShaderOutline = getShader("./resources/shaders/outline.shader", FRAGMENT);
 	
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	GLuint outlineVertexShader = glCreateShader(GL_VERTEX_SHADER);
