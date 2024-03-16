@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "mat.h"
+#include "stb_image.h"
+
 #define GLBIND_IMPLEMENTATION
 #define GLFW_INCLUDE_NONE
 #include <glbind.h>
@@ -20,67 +23,36 @@
 #    define M_PI 3.14159265358979323846264338327950288
 #endif
 
+#define PLAYER_WALKING_SPEED 4.317f
 
 
-#define CUBE 192
+#define CUBE 96
 
-const int windowWidth = 800;
-const int windowHeight = 800;
+const int windowWidth = 1920;
+const int windowHeight = 1080;
+//const int windowWidth = 800;
+//const int windowHeight = 800;
 const char* windowTitle = "MineC";
 
-typedef struct {
-	union {
-		GLfloat col[3];
-		struct {
-			GLfloat x;
-			GLfloat y;
-			GLfloat z;
-		};
-	};
-} vec3;
-
-typedef struct {
-	union {
-		GLfloat col[4];
-		struct {
-			GLfloat w;
-			GLfloat x;
-			GLfloat y;
-			GLfloat z;
-		};
-	};
-} vec4;
-
-typedef struct {
-	
-	union {
-		vec4 row[4];
-		struct {
-			GLfloat ww;
-			GLfloat wx;
-			GLfloat wy;
-			GLfloat wz;
-			GLfloat xw;
-			GLfloat xx;
-			GLfloat xy;
-			GLfloat xz;
-			GLfloat yw;
-			GLfloat yx;
-			GLfloat yy;
-			GLfloat yz;
-			GLfloat zw;
-			GLfloat zx;
-			GLfloat zy;
-			GLfloat zz;
-		};
-		struct {
-			vec4 w;
-			vec4 x;
-			vec4 y;
-			vec4 z;
-		};
-	};
-} mat4;
+typedef enum {
+	NONE = 0,
+	Y0X0,
+	Y0X1,
+	Y0Z0,
+	Y1Z1,
+	Y1X0,
+	Y1X1,
+	Y1Z0,
+	Y0Z1,
+	X0Y0,
+	X0Y1,
+	X1Y0,
+	X1Y1,
+	Z0Y0,
+	Z0Y1,
+	Z1Y0,
+	Z1Y1
+} collisionType;
 
 typedef struct {
 	vec3 cameraPos;
@@ -93,7 +65,24 @@ typedef struct {
 } Camera;
 
 typedef struct {
+	vec3 vertex[8];
+} Box;
+
+typedef struct {
 	Camera camera;
+	Box collisionBox;
+	int currentBlock;
+	float HSpeed;
+	float VSpeed;
+	vec3 acceleration;
+	vec3 motion;
+	bool onGround;
+	bool isFlying;
+	bool isSprinting;
+	bool isMoving;
+	bool isJumping;
+	float jumpTimer;
+	float flyTimer;
 } Player;
 
 Player player;
@@ -124,214 +113,14 @@ int closestToZero (vec3 first, vec3 second);
 block firstBlock (node *T, ray r);
 int isBlock (node *T, vec3 pos);
 const char* getShader (char *filePath, char type);
-void closeWindow (GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void drawAllBlocks (node *blocks, GLuint shader, GLuint VAOID[]);
 void drawALL (node *blocks, GLuint shaders[], GLuint VAOID[], ray r);
 void fillSkyBlock (node **chunk);
+void saveWorld (node *chunk, FILE *p);
+void loadWorld (node **chunk, FILE *p);
 
 
-vec3 scale_vec3 (vec3 vector, double x) {
-	
-	vector.x *= x;
-	vector.y *= x;
-	vector.z *= x;
-	
-	return vector;
-}
-
-vec4 scale_vec4 (vec4 vector, double x) {
-	
-	vector.w *= x;
-	vector.x *= x;
-	vector.y *= x;
-	vector.z *= x;
-	
-	return vector;
-}
-
-vec3 sum_vec3 (vec3 vector1, vec3 vector2) {
-	
-	vector1.x += vector2.x;
-	vector1.y += vector2.y;
-	vector1.z += vector2.z;
-	
-	return vector1;
-}
-
-vec4 sum_vec4 (vec4 vector1, vec4 vector2) {
-	
-	vector1.w += vector2.w;
-	vector1.x += vector2.x;
-	vector1.y += vector2.y;
-	vector1.z += vector2.z;
-	
-	return vector1;
-}
-
-vec3 sub_vec3 (vec3 vector1, vec3 vector2) {
-	
-	vector1.x -= vector2.x;
-	vector1.y -= vector2.y;
-	vector1.z -= vector2.z;
-	
-	return vector1;
-}
-
-vec4 sub_vec4 (vec4 vector1, vec4 vector2) {
-	
-	vector1.w -= vector2.w;
-	vector1.x -= vector2.x;
-	vector1.y -= vector2.y;
-	vector1.z -= vector2.z;
-	
-	return vector1;
-}
-
-vec3 multiply_vec3 (vec3 vector1, vec3 vector2) {
-	
-	vector1.x *= vector2.x;
-	vector1.y *= vector2.y;
-	vector1.z *= vector2.z;
-	
-	return vector1;
-}
-
-vec4 multiply_vec4 (vec4 vector1, vec4 vector2) {
-	
-	vector1.w *= vector2.w;
-	vector1.x *= vector2.x;
-	vector1.y *= vector2.y;
-	vector1.z *= vector2.z;
-	
-	return vector1;
-}
-
-
-double dot_vec3 (vec3 vector1, vec3 vector2) {
-	return vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
-}
-
-double dot_vec4 (vec4 vector1, vec4 vector2) {
-	return vector1.w * vector2.w + vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
-}
-
-double norm_vec3 (vec3 vector) {
-	return sqrt (dot_vec3 (vector, vector));
-}
-
-double norm_vec4 (vec4 vector) {
-	return sqrt (dot_vec4 (vector, vector));
-}
-
-vec3 normalize_vec3 (vec3 vector) {
-	return scale_vec3 (vector, 1 / norm_vec3 (vector));
-}
-
-vec4 normalize_vec4 (vec4 vector) {
-	return scale_vec4 (vector, 1 / norm_vec4 (vector));
-}
-
-vec3 cross_vec3 (vec3 vector1, vec3 vector2) {
-	vec3 out;
-	
-	out.x = vector1.y*vector2.z - vector1.z*vector2.y;
-	out.y = vector1.z*vector2.x - vector1.x*vector2.z;
-	out.z = vector1.x*vector2.y - vector1.y*vector2.x;
-	
-	return out;
-}
-
-mat4 multiply_mat4 (mat4 matrix1, mat4 matrix2) {
-	mat4 out;
-	
-	for(int i = 0; i < 4; i++) {    
-		for(int j = 0; j < 4; j++) {    
-			out.row[i].col[j] = 0;
-			for(int k=0; k < 4 ; k++) {    
-				out.row[i].col[j] += matrix1.row[i].col[k] * matrix2.row[k].col[j];    
-			}
-		}
-	}
-
-	return out;
-}
-
-mat4 lookAt_mat4 (vec3 from, vec3 to, vec3 up) {
-	
-	mat4 out = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
-	
-	vec3 forward = sub_vec3 (from, to);
-	forward = normalize_vec3 (forward);
-	
-	vec3 right = cross_vec3 (up, forward);
-	right = normalize_vec3 (right);
-	
-	vec3 newUp = cross_vec3 (forward, right);
-	
-	out.ww = right.x;
-	out.wx = newUp.x;
-	out.wy = forward.x;
-	
-	out.xw = right.y;
-	out.xx = newUp.y;
-	out.xy = forward.y;
-	
-	out.yw = right.z;
-	out.yx = newUp.z;
-	out.yy = forward.z;
-	
-	out.zw = dot_vec3 (right, scale_vec3 (from, -1));
-	out.zx = dot_vec3 (newUp, scale_vec3 (from, -1));
-	out.zy = dot_vec3 (forward, scale_vec3 (from, -1));
-	
-	return out;
-}
-
-mat4 perspective_mat4 (float angle, float ratio, float distNear, float distFar) {
-	mat4 out = (mat4){(vec4){0.0, 0.0, 0.0, 0.0}, (vec4){0.0, 0.0, 0.0, 0.0}, (vec4){0.0, 0.0, 0.0, 0.0}, (vec4){0.0, 0.0, 0.0, 0.0}};
-	
-	float tan_half_angle;
-	
-	tan_half_angle = tan(angle / 2);
-	
-	out.ww = (1 / (ratio * tan_half_angle));
-	out.xx = (1 / tan_half_angle);
-	out.yy = ((-(distFar + distNear)) / (distFar - distNear));
-	out.yz = -1;
-	out.zy = ((-(2 * distFar * distNear)) / (distFar - distNear));
-	
-	return out;
-}
-
-mat4 translate_mat4_vec3 (mat4 matrix, vec3 vector) {
-	
-	vec4 aux = (vec4){vector.x, vector.y, vector.z, 1};
-	vec4 a = (vec4){matrix.ww, matrix.xw, matrix.yw, matrix.zw};
-	matrix.zw = dot_vec4 (a, aux);
-	
-	a = (vec4){matrix.wx, matrix.xx, matrix.yx, matrix.zx};
-	matrix.zx = dot_vec4 (a, aux);
-	
-	a = (vec4){matrix.wy, matrix.xy, matrix.yy, matrix.zy};
-	matrix.zy = dot_vec4 (a, aux);
-	
-	a = (vec4){matrix.wz, matrix.xz, matrix.yz, matrix.zz};
-	matrix.zz = dot_vec4 (a, aux);
-	
-	return matrix;
-}
-
-void printBal (node *T) {
-	if (!T)
-		return;
-	
-	printf ("%d\n", T->bal);
-	if (T->bal != -1 && T->bal != 0 && T->bal != 1)
-		exit (0);
-	printBal (T->left);
-	printBal (T->right);
-}
 
 int searchElement (node *T, block data) {
 	while (T) {
@@ -357,21 +146,41 @@ block getElement (node *T, block data) {
 	return (block){-1, -1, -1, -1};
 }
 
-int help = 0;
+float help = 0;
 GLuint outlineVAO[1] = {0};
+
+float deltaTime = 0.f;
+
+void processMovement (GLFWwindow* window, Player *player, float deltaTime, node *chunk);
 
 
 int main(void)
 {	
 	
-	player.camera.cameraPos = (vec3){0.0, 3.0, 0.0};
+	player.camera.cameraPos = (vec3){0.5, 3.82, 0.5};
 	player.camera.cameraFront = (vec3){0.0, 0.0, -1.0};
 	player.camera.cameraUp = (vec3){0.0, 1.0, 0.0};
 	player.camera.direction = (vec3){0.0, 0.0, 0.0};
 	player.camera.view = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
 	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
 	player.camera.proj = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
-
+	
+	player.HSpeed = 4.317f;
+	player.VSpeed = 0.f;
+	player.onGround = true;
+	player.isFlying = false;
+	
+	player.collisionBox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
+	player.collisionBox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
+	player.collisionBox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
+	player.collisionBox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
+	player.collisionBox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
+	player.collisionBox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
+	player.collisionBox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
+	player.collisionBox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
+	
+	
+	
 	GLenum result = glbInit(NULL, NULL);
 	
 	/****************************************************/
@@ -384,7 +193,7 @@ int main(void)
 		return -1;
 	}
 	
-	window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, NULL, NULL);
+	window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, glfwGetPrimaryMonitor(), NULL);
 	if (!window){
 		printf ("Failed to create GLFW window\n");
 		glfwTerminate();
@@ -445,125 +254,91 @@ int main(void)
 	
 	//glDeleteProgram(shaderProgram);
 	//glDeleteProgram(outlineShaderProgram);
+	
+	GLfloat defaultBlock[] =
+	{    
+		0.f, 1.f, 1.f, 0.0f, 0.0f,
+		0.f, 0.f, 1.f, 0.0f, 0.5f,
+		1.f, 0.f, 1.f, 0.5f, 0.5f,
+		1.f, 1.f, 1.f, 0.5f, 0.0f,
+		0.f, 1.f, 0.f, 0.0f, 0.0f,
+		1.f, 1.f, 0.f, 0.5f, 0.0f,
+		0.f, 0.f, 0.f, 0.0f, 0.5f,
+		1.f, 0.f, 0.f, 0.5f, 0.5f,
 
-	GLfloat bedrock[] =
-	{    
-		-0.5f, -0.5f, -0.5f,	0.f, 0.f, 0.f,
-		-0.5f, -0.5f, 0.5f,		0.f, 0.f, 0.f,
-		-0.5f, 0.5f, 0.5f,		0.f, 0.f, 0.f,
-		0.5f, 0.5f, -0.5f,		0.f, 0.f, 0.f,
-		-0.5f, 0.5f, -0.5f,		0.f, 0.f, 0.f,
-		0.5f,-0.5f, 0.5f,		0.f, 0.f, 0.f,
-		0.5f,-0.5f,-0.5f,		0.f, 0.f, 0.f,
-		0.5f, 0.5f, 0.5f,		0.f, 0.f, 0.f
-	};
-	
-	GLfloat dirt[] =
-	{    
-		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
-		-0.5f, -0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
-		-0.5f, 0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
-		0.5f, 0.5f, -0.5f,		0.3411f, 0.2549f, 0.1569f,
-		-0.5f, 0.5f, -0.5f,		0.3411f, 0.2549f, 0.1569f,
-		0.5f,-0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
-		0.5f,-0.5f,-0.5f,		0.3411f, 0.2549f, 0.1569f,
-		0.5f, 0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f
-	};
-	
-	GLfloat grass[] = 
-	{ 
-		-0.5f, -0.5f, -0.5f,	0.3411f, 0.2549f, 0.1569f,
-		-0.5f, -0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
-		-0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f,
-		0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
-		-0.5f, 0.5f, -0.5f,		0.0078f, 0.5412f, 0.0588f,
-		0.5f,-0.5f, 0.5f,		0.3411f, 0.2549f, 0.1569f,
-		0.5f,-0.5f,-0.5f,		0.3411f, 0.2549f, 0.1569f,
-		0.5f, 0.5f, 0.5f,		0.0078f, 0.5412f, 0.0588f
-	};
-	
-	GLfloat log[] = 
-	{  
-		-0.5f, -0.5f, -0.5f,	0.2902, 0.1725f, 0.1725f,
-		-0.5f, -0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
-		-0.5f, 0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
-		0.5f, 0.5f, -0.5f,		0.2902, 0.1725f, 0.1725f,
-		-0.5f, 0.5f, -0.5f,		0.2902, 0.1725f, 0.1725f,
-		0.5f,-0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f,
-		0.5f,-0.5f,-0.5f,		0.2902, 0.1725f, 0.1725f,
-		0.5f, 0.5f, 0.5f,		0.2902, 0.1725f, 0.1725f
-	};
-	
-	GLfloat leaves[] = 
-	{    
-		-0.5f, -0.5f, -0.5f,	0.1961f, 0.8039f, 0.1961f,
-		-0.5f, -0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f,
-		-0.5f, 0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f,
-		0.5f, 0.5f, -0.5f,		0.1961f, 0.8039f, 0.1961f,
-		-0.5f, 0.5f, -0.5f,		0.1961f, 0.8039f, 0.1961f,
-		0.5f,-0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f,
-		0.5f,-0.5f,-0.5f,		0.1961f, 0.8039f, 0.1961f,
-		0.5f, 0.5f, 0.5f,		0.1961f, 0.8039f, 0.1961f
-	};
-	
-	GLfloat outline[] =
-	{
-		//FACE SUPERIOR
-	0.5, 0.5, 0.5, //0
-	-0.5, 0.5, 0.5, //1
-	0.5, 0.5, -0.5, //2
-	-0.5, 0.5, -0.5, //3
-	
-	0.49, 0.5, 0.49, //4
-	-0.49, 0.5, 0.49, //5
-	0.49, 0.5, -0.49, //6
-	-0.49, 0.5, -0.49, //7
-	
-	//A
-	0.49, 0.49, 0.5, //8
-	0.5, 0.49, 0.49, //9
-	-0.49, 0.49, 0.5, //10
-	-0.5, 0.49, 0.49, //11
-	0.49, 0.49, -0.5, //12
-	0.5, 0.49, -0.49, //13
-	-0.49, 0.49, -0.5, //14
-	-0.5, 0.49, -0.49, //15
-	
-	0.49, -0.49, 0.5, //16
-	0.5, -0.49, 0.49, //17
-	-0.49, -0.49, 0.5, //18
-	-0.5, -0.49, 0.49, //19
-	0.49, -0.49, -0.5, //20
-	0.5, -0.49, -0.49, //21
-	-0.49, -0.49, -0.5, //22
-	-0.5, -0.49, -0.49, //23
-	
-	0.5, -0.5, 0.5, //24
-	-0.5, -0.5, 0.5, //25
-	0.5, -0.5, -0.5, //26
-	-0.5, -0.5, -0.5, //27
-	
-	0.49, -0.5, 0.49, //28
-	-0.49, -0.5, 0.49, //29
-	0.49, -0.5, -0.49, //30
-	-0.49, -0.5, -0.49 //31
+		0.f, 1.f, 0.f, 0.0f, 0.5f,
+		1.f, 1.f, 0.f, 0.5f, 0.5f,
+		0.f, 1.f, 1.f, 0.0f, 1.0f,
+		1.f, 1.f, 1.f, 0.5f, 1.0f,
+
+		1.f, 1.f, 1.f, 0.0f, 0.0f,
+		1.f, 0.f, 1.f, 0.0f, 0.5f,
+
+		0.f, 1.f, 1.f, 0.5f, 0.0f,
+		0.f, 0.f, 1.f, 0.5f, 0.5f,
+
+		0.f, 0.f, 0.f, 0.5f, 0.0f,
+		1.f, 0.f, 0.f, 1.0f, 0.0f,
+		0.f, 0.f, 1.f, 0.5f, 0.5f,
+		1.f, 0.f, 1.f, 1.0f, 0.5f
 	};
 
 	GLuint indices[] =
 	{
-		0, 1, 2,
-		3, 0, 4,
-		5, 0, 6,
-		3, 6, 0,
-		0, 2, 4,
-		5, 1, 0,
-		2, 1, 5,
-		7, 6, 3,
-		6, 7, 5,
-		7, 3, 4,
-		7, 4, 2,
-		7, 2, 5
+		0, 1, 3, 3, 1, 2,
+		8, 10, 11, 9, 8, 11,
+		12, 13, 7, 5, 12, 7,
+		14, 15, 6, 4, 14, 6,
+		16, 18, 19, 17, 16, 19,
+		4, 6, 7, 5, 4, 7
 	};
+	
+	
+	
+	GLfloat outline[] =
+	{
+		//FACE SUPERIOR
+	1.01, 1.01, 1.01, //0
+	-0.01, 1.01, 1.01, //1
+	1.01, 1.01, -0.01, //2
+	-0.01, 1.01, -0.01, //3
+	
+	0.99, 1.01, 0.99, //4
+	0.01, 1.01, 0.99, //5
+	0.99, 1.01, 0.01, //6
+	0.01, 1.01, 0.01, //7
+	
+	//A
+	0.99, 0.99, 1.01, //8
+	1.01, 0.99, 0.99, //9
+	0.01, 0.99, 1.01, //10
+	-0.01, 0.99, 0.99, //11
+	0.99, 0.99, -0.01, //12
+	1.01, 0.99, 0.01, //13
+	0.01, 0.99, -0.01, //14
+	-0.01, 0.99, 0.01, //15
+	
+	0.99, 0.01, 1.01, //16
+	1.01, 0.01, 0.99, //17
+	0.01, 0.01, 1.01, //18
+	-0.01, 0.01, 0.99, //19
+	0.99, 0.01, -0.01, //20
+	1.01, 0.01, 0.01, //21
+	0.01, 0.01, -0.01, //22
+	-0.01, 0.01, 0.01, //23
+	
+	1.01, -0.01, 1.01, //24
+	-0.01, -0.01, 1.01, //25
+	1.01, -0.01, -0.01, //26
+	-0.01, -0.01, -0.01, //27
+	
+	0.99, -0.01, 0.99, //28
+	0.01, -0.01, 0.99, //29
+	0.99, -0.01, 0.01, //30
+	0.01, -0.01, 0.01 //31
+	};
+	
+	
 	
 	GLuint indicesOutline[] =
 	{
@@ -594,7 +369,6 @@ int main(void)
 	0, 17, 24,
 	0, 9, 17,
 	
-	//duvida
 	1, 3, 15,
 	1, 11, 15,
 	1, 11, 25,
@@ -604,8 +378,6 @@ int main(void)
 	3, 23, 27,
 	3, 15, 23,
 
-	//12 14
-	
 	2, 3, 12,
 	3, 12, 14,
 	3, 14, 27,
@@ -627,23 +399,23 @@ int main(void)
 	
 	node *chunk = NULL;
 	
-	fillSkyBlock (&chunk);
+	//fillSkyBlock (&chunk);
+    FILE *p = fopen("world.map", "r");
+    if (!p)
+        return -1;
+    
+    loadWorld (&chunk, p);
+    fclose (p);
 	
-	GLuint VAOID[5] = {0};
+	GLuint VAOID[1] = {0};
 	
-	
-	for (int i = 0; i < sizeof(VAOID) / sizeof(GLuint); i++)
-		glGenVertexArrays(1, &VAOID[i]);
+	glGenVertexArrays(1, &VAOID[0]);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, CUBE * sizeof(VAOID) / sizeof(GLuint), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, CUBE*0, CUBE, bedrock);
-	glBufferSubData(GL_ARRAY_BUFFER, CUBE*1, CUBE, dirt);
-	glBufferSubData(GL_ARRAY_BUFFER, CUBE*2, CUBE, grass);
-	glBufferSubData(GL_ARRAY_BUFFER, CUBE*3, CUBE, log);
-	glBufferSubData(GL_ARRAY_BUFFER, CUBE*4, CUBE, leaves);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(defaultBlock), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(defaultBlock), defaultBlock);
 	
 	GLuint outlineVBO;
 	GLuint outlineEBO;
@@ -664,14 +436,14 @@ int main(void)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
+	
 	for (int i = 0; i < sizeof(VAOID) / sizeof(GLuint); i++){
 		glBindVertexArray(VAOID[i]);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(CUBE*i));
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (void*)(CUBE*i + 3*sizeof(float)));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(CUBE*i));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(CUBE*i + 3*sizeof(float)));
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -701,12 +473,59 @@ int main(void)
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 	
 	glfwSetCursorPosCallback(window, mouseCallback);
-	glfwSetKeyCallback(window, closeWindow);
 	
-	float cameraSpeed = 0.01f;
+	float cameraSpeed = 4.317f;
+	
+	int widthImg, heightImg, numColCh;
+
+	
+	
+	char blockPaths[][100] = {	"dirt.png", 
+								"grass.png", 
+								"bricks.png", 
+								"oak_log.png", 
+								"leaves_oak.png"};
+	char base[] = "./resources/textures/";
+	
+	GLuint texture1;
+	for (int i = 0; i < 5; i++) {
+		
+		char block[125];
+		strcpy (block, base);
+		strcat (block, blockPaths[i]);
+		
+		glGenTextures (1, &texture1);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		
+		unsigned char* textureBytes = stbi_load (block, &widthImg, &heightImg, &numColCh, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureBytes);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		stbi_image_free(textureBytes);
+	}
+	
+	GLuint tex0Uni = glGetUniformLocation(shaderProgram, "tex0");
+	
+	
+	float currentFrame = 0.f;
+	float lastFrame = 0.f;
+	float FPS = 120.f;
+	
+	player.currentBlock = 0;
 	
 	while (!glfwWindowShouldClose(window))
 	{
+
+		do {
+			currentFrame = glfwGetTime();
+			deltaTime = currentFrame - lastFrame;
+		} while (deltaTime < 1.0 / FPS);
+		lastFrame = currentFrame;
+
 		glClearColor(0.5059f, 0.8314f, 0.9804f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
@@ -714,88 +533,25 @@ int main(void)
 		player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
 		player.camera.proj = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
 		
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		    cameraSpeed = 0.1f;
+		processMovement (window, &player, deltaTime, chunk);
 		
-		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		{
-			vec3 aux = player.camera.cameraFront;
-			
-			aux.y = 0;
-			
-			aux = normalize_vec3 (aux);
-			
-			
-			int dirX = 0, dirZ = 0;
-			
-			int a = 1;
-			
-			if (aux.x > 0)
-				dirX = a;
-			else if (aux.x < 0)
-				dirX = -a;
-			
-			if (aux.z > 0)
-				dirZ = a;
-			else if (aux.z < 0)
-				dirZ = -a;
-			
-			aux = scale_vec3 (aux, cameraSpeed);
-			
-			vec3 sumDirectionX = (vec3){aux.x, aux.y, 0};
-			vec3 sumDirectionZ = (vec3){0, aux.y, aux.z};
-			vec3 aux2 = player.camera.cameraPos;
-			
-			if (isBlock (chunk, (vec3){player.camera.cameraPos.x, player.camera.cameraPos.y-0.5, player.camera.cameraPos.z}) ||
-				isBlock (chunk, (vec3){player.camera.cameraPos.x, player.camera.cameraPos.y-1.5, player.camera.cameraPos.z})) {
-				aux.x = 0;
-				aux.z = 0;
-				}
-
-			player.camera.cameraPos = sum_vec3 (player.camera.cameraPos, aux);
-		}
+		if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
+			player.currentBlock = 0;
 		
-		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		{
-			vec3 aux = player.camera.cameraFront;
-			
-			aux.y = 0;
-			
-			aux = normalize_vec3 (aux);
-			aux = scale_vec3 (aux, cameraSpeed);
-			
-			player.camera.cameraPos = sub_vec3 (player.camera.cameraPos, aux);
-		}
+		if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+			player.currentBlock = 1;
 		
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			
-			vec3 aux;
-			
-			aux = cross_vec3 (player.camera.cameraFront, player.camera.cameraUp);
-			aux = normalize_vec3 (aux);
-			aux = scale_vec3 (aux, cameraSpeed);
-			
-			player.camera.cameraPos = sub_vec3 (player.camera.cameraPos, aux);
-			
-		}
+		if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+			player.currentBlock = 2;
 		
-		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			vec3 aux;
-			
-			aux = cross_vec3 (player.camera.cameraFront, player.camera.cameraUp);
-			aux = normalize_vec3 (aux);
-			aux = scale_vec3 (aux, cameraSpeed);
-			
-			player.camera.cameraPos = sum_vec3 (player.camera.cameraPos, aux);
-		}
+		if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+			player.currentBlock = 3;
 		
-		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-			player.camera.cameraPos = sum_vec3 (player.camera.cameraPos, scale_vec3 (player.camera.cameraUp, cameraSpeed));
-		}
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-		    if (!isBlock (chunk, (vec3){player.camera.cameraPos.x, player.camera.cameraPos.y-1.81, player.camera.cameraPos.z}))
-				player.camera.cameraPos = sub_vec3 (player.camera.cameraPos, scale_vec3 (player.camera.cameraUp, cameraSpeed));
-		}
+		if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+			player.currentBlock = 4;
+		
+		if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+			player.currentBlock = 5;
 		
 		if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
 		    cameraSpeed += 0.001f;
@@ -805,14 +561,14 @@ int main(void)
 		
 		ray r = initializeRay (player.camera.cameraPos, player.camera.cameraFront);
 		
-		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && help == 0) {
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && help <= 0) {
 		    block aux = firstBlock(chunk, r);
 		    if (aux.id != -1)
 		    	removeBlock (&chunk, aux);
-			help = 20;
+			help = 0.2f;
 		}
 		
-		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && help == 0) {
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && help <= 0) {
 		    
 			vec3 up = {0, 1, 0};
 			vec3 down = {0, -1, 0};
@@ -824,54 +580,72 @@ int main(void)
 			block bAux = firstBlock(chunk, r);
 		    
 			vec3 aux = {bAux.x, bAux.y, bAux.z};
-			
 			block posBlock = vecToBlock (aux);
-			
 			
 			if (!isBlock (chunk, sum_vec3 (aux, up)) && intersect(sum_vec3 (aux, up), r, 5) && player.camera.cameraPos.y > aux.y+0.5) {
 				
 				posBlock = vecToBlock (sum_vec3 (aux, up));
-				posBlock.id = 1;
+				posBlock.id = player.currentBlock;
 				
 			} else if (!isBlock (chunk, sum_vec3 (aux, down)) && intersect(sum_vec3 (aux, down), r, 5) && player.camera.cameraPos.y < aux.y-0.5) {
 				
 				posBlock = vecToBlock (sum_vec3 (aux, down));
-				posBlock.id = 1;
+				posBlock.id = player.currentBlock;
 				
 			} else if (!isBlock (chunk, sum_vec3 (aux, right)) &&  intersect(sum_vec3 (aux, right), r, 5) && player.camera.cameraPos.x > aux.x+0.5) {
 				
 				posBlock = vecToBlock (sum_vec3 (aux, right));
-				posBlock.id = 1;
+				posBlock.id = player.currentBlock;
 				
 			} else if (!isBlock (chunk, sum_vec3 (aux, left)) &&  intersect(sum_vec3 (aux, left), r, 5) && player.camera.cameraPos.x < aux.x-0.5) {
 				
 				posBlock = vecToBlock (sum_vec3 (aux, left));
-				posBlock.id = 1;
+				posBlock.id = player.currentBlock;
 			 
 			} else if (!isBlock (chunk, sum_vec3 (aux, front)) &&  intersect(sum_vec3 (aux, front), r, 5) && player.camera.cameraPos.z > aux.z+0.5) {
 				
 				posBlock = vecToBlock (sum_vec3 (aux, front));
-				posBlock.id = 1;
+				posBlock.id = player.currentBlock;
 			
 			} else if (!isBlock (chunk, sum_vec3 (aux, back)) &&  intersect(sum_vec3 (aux, back), r, 5) && player.camera.cameraPos.z < aux.z-0.5) {
 				
 				posBlock = vecToBlock (sum_vec3 (aux, back));
-				posBlock.id = 1;
+				posBlock.id = player.currentBlock;
 				
 			}
 			
+			
+			
 			if (posBlock.id != -1) {
 				insertBlock (&chunk, posBlock);
-				help = 20;
+				help = 0.2f;
 			}
 		}
 		
 		if (help > 0)
-			help--;
+			help -= deltaTime;
 		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-			player.camera.cameraPos = (vec3){0.0f, 3.5f, 0.0f};
-			player.camera.cameraFront = (vec3){0.0f, 0.0f, -1.0f};
-			player.camera.cameraUp = (vec3){0.0f, 1.0f, 0.0f};
+			player.camera.cameraPos = (vec3){0.5, 3.82, 0.5};
+			player.camera.cameraFront = (vec3){0.0, 0.0, -1.0};
+			player.camera.cameraUp = (vec3){0.0, 1.0, 0.0};
+			player.camera.direction = (vec3){0.0, 0.0, 0.0};
+			player.camera.view = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+			player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+			player.camera.proj = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+			
+			player.HSpeed = 4.317f;
+			player.VSpeed = 0.f;
+			player.onGround = true;
+			player.isFlying = false;
+			
+			player.collisionBox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
+			player.collisionBox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
+			player.collisionBox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
+			player.collisionBox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
+			player.collisionBox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
+			player.collisionBox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
+			player.collisionBox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
+			player.collisionBox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
 			lastX = 400;
 			lastY = 400;
 			yaw = -90.0f;
@@ -879,16 +653,28 @@ int main(void)
 			clearChunk (&chunk);
 			fillSkyBlock (&chunk);
 		}
-		cameraSpeed = 0.05f;
+		cameraSpeed = 4.317f;
 		
 		player.camera.view = lookAt_mat4 (player.camera.cameraPos, sum_vec3 (player.camera.cameraPos, player.camera.cameraFront), player.camera.cameraUp);
 		
-		player.camera.proj = perspective_mat4 ((float)degToRad(90.f), (float)(windowWidth/windowHeight), 0.2f, 600.0f);
+		player.camera.proj = perspective_mat4 ((float)degToRad(90.f), (float)windowWidth/windowHeight, 0.1f, 1600.0f);
 		
 		GLuint shaders[] = {shaderProgram, outlineShaderProgram};
 		
-		drawALL (chunk, shaders, VAOID, r);
-
+		drawALL (chunk, shaders, &VAOID[0], r);
+		
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            
+            FILE *p = fopen("world.map", "w");
+            if (!p)
+                return -1;
+            
+            saveWorld (chunk, p);
+            fclose (p);
+            
+            glfwSetWindowShouldClose(window, 1);
+        }
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -902,6 +688,356 @@ int main(void)
 	glfwTerminate();
 	return 0;
 }
+
+collisionType detectCollisionPlayer (GLFWwindow* window, Player *player, vec3 movement, float deltaTime, float speed, node *chunk);
+
+float jumpSpeed = 8.5;
+
+bool isPressedSpace = false;
+
+
+void processMovement (GLFWwindow* window, Player *player, float deltaTime, node *chunk) {
+	
+	float a = 8.5;
+	
+	if (player->flyTimer > 0)
+		player->flyTimer -= deltaTime;
+	
+	
+	if (player->isFlying) {
+		
+		player->VSpeed = 0;
+		
+		if (!player->onGround) {
+			
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isPressedSpace) {
+				isPressedSpace = true;
+				player->VSpeed = PLAYER_WALKING_SPEED;
+				
+				if (player->flyTimer <= 0)
+					player->flyTimer = 0.2;
+				else if (player->flyTimer > 0) {
+					player->isFlying = false;
+					player->flyTimer = 0;
+				}
+
+			} else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE && isPressedSpace)
+				isPressedSpace = false;
+			else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+				player->VSpeed = PLAYER_WALKING_SPEED;
+			}
+			
+			if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+				player->VSpeed = -PLAYER_WALKING_SPEED;
+			}
+			
+			
+			
+			if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, player->VSpeed, chunk)) {
+				player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+				for (int i = 0; i < 8; i++)
+					player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+			} else {
+
+				for (int i = 0; i < 4; i++) {
+					player->collisionBox.vertex[i].y = round(player->collisionBox.vertex[i].y);
+				}
+				
+				for (int i = 4; i < 8; i++) {
+					player->collisionBox.vertex[i].y = player->collisionBox.vertex[0].y+1.8;
+				}
+
+				player->camera.cameraPos.y = player->collisionBox.vertex[0].y + 1.62;
+
+				player->VSpeed = 0;
+				player->onGround = true;
+			}
+			
+			
+			
+		} else {
+			player->isFlying = false;
+		}
+		
+		
+	} else {
+		
+		if (!player->onGround) {
+			player->VSpeed -= ((jumpSpeed*jumpSpeed)/2/1.251)*deltaTime;
+			
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isPressedSpace) {
+				isPressedSpace = true;
+				if (player->flyTimer <= 0)
+					player->flyTimer = 0.2;
+				else if (player->flyTimer > 0) {
+					player->isFlying = true;
+					player->flyTimer = 0;
+				}
+			} else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE && isPressedSpace)
+				isPressedSpace = false;
+
+			
+			
+			
+			if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, player->VSpeed, chunk)) {
+				player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+				for (int i = 0; i < 8; i++)
+					player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+			} else {
+
+				for (int i = 0; i < 4; i++) {
+					player->collisionBox.vertex[i].y = round(player->collisionBox.vertex[i].y);
+				}
+				
+				for (int i = 4; i < 8; i++) {
+					player->collisionBox.vertex[i].y = player->collisionBox.vertex[0].y+1.8;
+				}
+
+				player->camera.cameraPos.y = player->collisionBox.vertex[0].y + 1.62;
+
+				player->VSpeed = 0;
+				player->onGround = true;
+			}
+			
+		} else {
+			
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+				isPressedSpace = true;
+				player->VSpeed = jumpSpeed;
+				player->onGround = false;
+				
+				if (player->flyTimer <= 0)
+					player->flyTimer = 0.2;
+				
+				if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, player->VSpeed, chunk)) {
+					player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+					for (int i = 0; i < 8; i++)
+						player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+				} else
+					player->VSpeed = 0;
+			} else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE && isPressedSpace)
+				isPressedSpace = false;
+			
+			if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, -1, chunk)) {
+				player->onGround = false;
+			}
+		
+		
+		}
+		
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	vec3 direction = (vec3){0, 0, 0};
+	vec3 current = player->camera.cameraFront;
+	
+	current.y = 0;
+	
+	player->isMoving = false;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		direction = sum_vec3 (direction, normalize_vec3 (current));
+		player->isMoving = true;
+	}
+	
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		direction = sub_vec3 (direction, normalize_vec3 (current));
+		player->isMoving = true;
+	}
+	
+	
+	current.y = player->camera.cameraFront.y;
+	
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		direction = sub_vec3 (direction, normalize_vec3 (cross_vec3(current, player->camera.cameraUp)));
+		player->isMoving = true;
+	}
+	
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		direction = sum_vec3 (direction, normalize_vec3 (cross_vec3(current, player->camera.cameraUp)));
+		player->isMoving = true;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || (player->isSprinting && player->isMoving)) {
+		player->HSpeed = PLAYER_WALKING_SPEED*1.3f;
+		player->isSprinting = true;
+	} else {
+		player->HSpeed = PLAYER_WALKING_SPEED;
+		player->isSprinting = false;
+	}
+	
+	
+	
+	
+	/*
+	player.collisionBox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
+	player.collisionBox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
+	player.collisionBox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
+	player.collisionBox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
+	player.collisionBox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
+	player.collisionBox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
+	player.collisionBox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
+	player.collisionBox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
+	*/
+	
+	
+	
+	if (player->isMoving) {
+		
+		if (!player->HSpeed)
+			player->HSpeed = PLAYER_WALKING_SPEED;
+		
+		//printf ("%f %f\n", direction.x, direction.z);
+		direction = scale_vec3 (normalize_vec3 (direction), player->HSpeed * deltaTime);
+		//printf ("%f %f\n", direction.x, direction.z);
+		
+		
+		
+		if (!detectCollisionPlayer (window, player, (vec3){direction.x, 0, 0}, deltaTime, 1, chunk)) {
+			player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, (vec3){direction.x, 0, 0});
+			for (int i = 0; i < 8; i++)
+				player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], (vec3){direction.x, 0, 0});
+		} /*else {
+			if (isBlock (chunk, sum_vec3 (player->collisionBox.vertex[0], (vec3){direction.x, 0, 0})) ||
+				isBlock (chunk, sum_vec3 (player->collisionBox.vertex[3], (vec3){direction.x, 0, 0})) ||
+				isBlock (chunk, sum_vec3 (player->collisionBox.vertex[4], (vec3){direction.x, 0, 0})) ||
+				isBlock (chunk, sum_vec3 (player->collisionBox.vertex[7], (vec3){direction.x, 0, 0}))) 
+			{
+				player->collisionBox.vertex[0].x = round (player->collisionBox.vertex[0].x);
+				player->collisionBox.vertex[1].x = player->collisionBox.vertex[0].x + 0.6;
+				player->collisionBox.vertex[2].x = player->collisionBox.vertex[0].x + 0.6;
+				player->collisionBox.vertex[3].x = player->collisionBox.vertex[0].x;
+				player->collisionBox.vertex[4].x = player->collisionBox.vertex[0].x;
+				player->collisionBox.vertex[5].x = player->collisionBox.vertex[0].x + 0.6;
+				player->collisionBox.vertex[6].x = player->collisionBox.vertex[0].x + 0.6;
+				player->collisionBox.vertex[7].x = player->collisionBox.vertex[0].x;
+				
+				player->camera.cameraPos.x = player->collisionBox.vertex[0].x + 0.3;
+				
+				
+			} else if (	isBlock (chunk, sum_vec3 (player->collisionBox.vertex[1], (vec3){direction.x, 0, 0})) ||
+						isBlock (chunk, sum_vec3 (player->collisionBox.vertex[2], (vec3){direction.x, 0, 0})) ||
+						isBlock (chunk, sum_vec3 (player->collisionBox.vertex[5], (vec3){direction.x, 0, 0})) ||
+						isBlock (chunk, sum_vec3 (player->collisionBox.vertex[6], (vec3){direction.x, 0, 0})))
+			{
+
+				player->collisionBox.vertex[1].x = round (player->collisionBox.vertex[1].x);
+				
+				player->collisionBox.vertex[0].x = player->collisionBox.vertex[1].x - 0.6;
+				player->collisionBox.vertex[2].x = player->collisionBox.vertex[1].x;
+				player->collisionBox.vertex[3].x = player->collisionBox.vertex[1].x - 0.6;
+				player->collisionBox.vertex[4].x = player->collisionBox.vertex[1].x - 0.6;
+				player->collisionBox.vertex[5].x = player->collisionBox.vertex[1].x;
+				player->collisionBox.vertex[6].x = player->collisionBox.vertex[1].x;
+				player->collisionBox.vertex[7].x = player->collisionBox.vertex[1].x - 0.6;
+				
+				player->camera.cameraPos.x = player->collisionBox.vertex[0].x + 0.3;
+				
+			}
+			
+		}*/
+		
+		if (!detectCollisionPlayer (window, player, (vec3){0, 0, direction.z}, deltaTime, 1, chunk)) {
+			player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, (vec3){0, 0, direction.z});
+			for (int i = 0; i < 8; i++)
+				player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], (vec3){0, 0, direction.z});
+		} /*else {
+			
+			if (isBlock (chunk, sum_vec3 (player->collisionBox.vertex[0], (vec3){0, 0, direction.z})) ||
+				isBlock (chunk, sum_vec3 (player->collisionBox.vertex[1], (vec3){0, 0, direction.z})) ||
+				isBlock (chunk, sum_vec3 (player->collisionBox.vertex[4], (vec3){0, 0, direction.z})) ||
+				isBlock (chunk, sum_vec3 (player->collisionBox.vertex[5], (vec3){0, 0, direction.z}))) 
+			{
+				//printf ("%f\n", player->collisionBox.vertex[0].z);
+				player->collisionBox.vertex[0].z = round (player->collisionBox.vertex[0].z);
+				//printf ("%f\n", player->collisionBox.vertex[0].z);
+				player->collisionBox.vertex[1].z = player->collisionBox.vertex[0].z;
+				player->collisionBox.vertex[2].z = player->collisionBox.vertex[0].z + 0.6;
+				player->collisionBox.vertex[3].z = player->collisionBox.vertex[0].z + 0.6;
+				player->collisionBox.vertex[4].z = player->collisionBox.vertex[0].z;
+				player->collisionBox.vertex[5].z = player->collisionBox.vertex[0].z;
+				player->collisionBox.vertex[6].z = player->collisionBox.vertex[0].z + 0.6;
+				player->collisionBox.vertex[7].z = player->collisionBox.vertex[0].z + 0.6;
+				
+				player->camera.cameraPos.z = player->collisionBox.vertex[0].z + 0.3;
+				
+				
+			} else if (	isBlock (chunk, sum_vec3 (player->collisionBox.vertex[2], (vec3){0, 0, direction.z})) ||
+						isBlock (chunk, sum_vec3 (player->collisionBox.vertex[3], (vec3){0, 0, direction.z})) ||
+						isBlock (chunk, sum_vec3 (player->collisionBox.vertex[6], (vec3){0, 0, direction.z})) ||
+						isBlock (chunk, sum_vec3 (player->collisionBox.vertex[7], (vec3){0, 0, direction.z})))
+			{
+				//printf ("%f\n", player->collisionBox.vertex[2].z);
+				/*player->collisionBox.vertex[2].z = round (player->collisionBox.vertex[2].z);
+				//printf ("%f\n", player->collisionBox.vertex[2].z);
+				
+				player->collisionBox.vertex[0].z = player->collisionBox.vertex[2].z - 0.6;
+				player->collisionBox.vertex[1].z = player->collisionBox.vertex[2].z - 0.6;
+				player->collisionBox.vertex[3].z = player->collisionBox.vertex[2].z;
+				player->collisionBox.vertex[4].z = player->collisionBox.vertex[2].z - 0.6;
+				player->collisionBox.vertex[5].z = player->collisionBox.vertex[2].z - 0.6;
+				player->collisionBox.vertex[6].z = player->collisionBox.vertex[2].z;
+				player->collisionBox.vertex[7].z = player->collisionBox.vertex[2].z;
+				
+				player->camera.cameraPos.z = player->collisionBox.vertex[0].z + 0.3;
+				
+			}
+			
+		}*/
+		
+		
+	} else {
+		player->HSpeed = 0;
+	}
+}
+
+collisionType detectCollisionPlayer (GLFWwindow* window, Player *player, vec3 movement, float deltaTime, float speed, node *chunk) {
+	
+	
+	
+	
+	
+	
+	
+	
+	return isBlock (chunk, sum_vec3 (player->collisionBox.vertex[0], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[1], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[2], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[3], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[4], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[5], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[6], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (chunk, sum_vec3 (player->collisionBox.vertex[7], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)));
+}
+
+
+
+
+
 
 ray initializeRay (vec3 origin, vec3 direction) {
 	ray aux;
@@ -957,12 +1093,6 @@ const char* getShader (char *filePath, char type)
 	if (!realloc (shaderGLSL, strlen(shaderGLSL)+1))
 		return NULL;
 	return shaderGLSL;
-}
-
-void closeWindow (GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, 1);
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)
@@ -1026,13 +1156,13 @@ void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]);
 void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]);
 
 void drawALL (node *blocks, GLuint *shaders, GLuint *VAOID, ray r) {
-
-	drawBlocks (blocks, shaders[0], VAOID);
 	
 	block first = firstBlock (blocks, r);
 	if (first.id != -1)
 		drawBlockOutline (first, shaders[1], VAOID);
 	
+	drawBlocks (blocks, shaders[0], VAOID);
+
 }
 
 void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]) {
@@ -1054,7 +1184,7 @@ void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]) {
 	glBindVertexArray(outlineVAO[0]);
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
 	
-	glClear(GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_DEPTH_BUFFER_BIT);
 	glDrawElements(GL_TRIANGLES, 144, GL_UNSIGNED_INT, 0);
 }
 
@@ -1066,10 +1196,11 @@ void drawAllBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
 	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {blocks->data.x, blocks->data.y, blocks->data.z});
 	
 	int modelLoc = glGetUniformLocation(shader, "model");
-	glBindVertexArray(VAOID[blocks->data.id]);
+	glBindVertexArray(VAOID[0]);
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
-
-	glDrawElements(GL_TRIANGLES, sizeof(GLuint)*36/sizeof(int), GL_UNSIGNED_INT, 0);
+	
+	glBindTexture(GL_TEXTURE_2D, blocks->data.id);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	
 	drawAllBlocks (blocks->left, shader, VAOID);
 	drawAllBlocks (blocks->right, shader, VAOID);
@@ -1088,7 +1219,7 @@ void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
 
 int intersect (vec3 position, ray r, float range) {
 	
-	vec3 bounds[2] = {sum_vec3(position, (vec3){-0.5, -0.5, -0.5}), sum_vec3(position, (vec3){0.5, 0.5, 0.5})};
+	vec3 bounds[2] = {position, sum_vec3(position, (vec3){1, 1, 1})};
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	
 	tmin = (bounds[r.sign[0]].x - r.origin.x) * r.invDirection.x;
@@ -1118,10 +1249,11 @@ int intersect (vec3 position, ray r, float range) {
 }
 
 block vecToBlock (vec3 T) {
-	return (block){round(T.x), round(T.y), round(T.z), -1};
+	return (block){(int)floor(T.x), (int)floor(T.y), (int)floor(T.z), -1};
 }
 
 int isBlock (node *T, vec3 pos) {
+	
 	if (getElement(T, vecToBlock(pos)).id == -1)
 		return 0;
 	return 1;
@@ -1217,4 +1349,28 @@ void fillSkyBlock (node **chunk) {
 	insertBlock (chunk, (block){-3, 1, 2, 2});
 	insertBlock (chunk, (block){-2, 1, 2, 2});
 	insertBlock (chunk, (block){-4, 1, 2, 2});
+	
+}
+
+void saveWorld (node *chunk, FILE *p) {
+    
+    if (!chunk)
+        return;
+    
+    fprintf(p, "%d %d %d %d\n", chunk->data.x, chunk->data.y, chunk->data.z, chunk->data.id);
+    
+    
+    saveWorld (chunk->left, p);
+    saveWorld (chunk->right, p);
+}
+
+
+void loadWorld (node **chunk, FILE *p) {
+    
+    vector pos;
+    int id;
+    
+    while (fscanf (p, "%lf %lf %lf %d%*c", &pos.x, &pos.y, &pos.z, &id) != EOF)
+        insertBlock (chunk, (block){(int)pos.x, (int)pos.y, (int)pos.z, id});
+    
 }
