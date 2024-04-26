@@ -689,6 +689,73 @@ int main(void)
 	return 0;
 }
 
+void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]);
+void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]);
+
+void drawALL (node *blocks, GLuint *shaders, GLuint *VAOID, ray r) {
+	
+	block first = firstBlock (blocks, r);
+	if (first.id != -1)
+		drawBlockOutline (first, shaders[1], VAOID);
+	
+	drawBlocks (blocks, shaders[0], VAOID);
+
+}
+
+void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]) {
+	
+	glUseProgram(shader);
+	
+	int viewLoc = glGetUniformLocation(shader, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &player.camera.view.ww);
+	
+	int projLoc = glGetUniformLocation(shader, "proj");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &player.camera.proj.ww);
+	
+	
+	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {T.x, T.y, T.z});
+	
+	
+	int modelLoc = glGetUniformLocation(shader, "model");
+	glBindVertexArray(outlineVAO[0]);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
+	
+	//glClear(GL_DEPTH_BUFFER_BIT);
+	glDrawElements(GL_TRIANGLES, 144, GL_UNSIGNED_INT, 0);
+}
+
+void drawAllBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
+	if (!blocks)
+		return;
+	
+	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {blocks->data.x, blocks->data.y, blocks->data.z});
+	
+	int modelLoc = glGetUniformLocation(shader, "model");
+	glBindVertexArray(VAOID[0]);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
+	
+	glBindTexture(GL_TEXTURE_2D, blocks->data.id);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+	
+	drawAllBlocks (blocks->left, shader, VAOID);
+	drawAllBlocks (blocks->right, shader, VAOID);
+}
+
+void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
+	glUseProgram(shader);
+	
+	int viewLoc = glGetUniformLocation(shader, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &player.camera.view.ww);
+	int projLoc = glGetUniformLocation(shader, "proj");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &player.camera.proj.ww);
+	
+	drawAllBlocks (blocks, shader, VAOID);
+}
+
+
+
 collisionType detectCollisionPlayer (GLFWwindow* window, Player *player, vec3 movement, float deltaTime, float speed, node *chunk);
 
 float jumpSpeed = 8.5;
@@ -1150,71 +1217,6 @@ block firstBlock (node *T, ray r) {
 	}
 	
 	return (block){-1, -1, -1, -1};
-}
-
-void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]);
-void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]);
-
-void drawALL (node *blocks, GLuint *shaders, GLuint *VAOID, ray r) {
-	
-	block first = firstBlock (blocks, r);
-	if (first.id != -1)
-		drawBlockOutline (first, shaders[1], VAOID);
-	
-	drawBlocks (blocks, shaders[0], VAOID);
-
-}
-
-void drawBlockOutline (block T, GLuint shader, GLuint VAOID[]) {
-	
-	glUseProgram(shader);
-	
-	int viewLoc = glGetUniformLocation(shader, "view");
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &player.camera.view.ww);
-	
-	int projLoc = glGetUniformLocation(shader, "proj");
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &player.camera.proj.ww);
-	
-	
-	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
-	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {T.x, T.y, T.z});
-	
-	
-	int modelLoc = glGetUniformLocation(shader, "model");
-	glBindVertexArray(outlineVAO[0]);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
-	
-	//glClear(GL_DEPTH_BUFFER_BIT);
-	glDrawElements(GL_TRIANGLES, 144, GL_UNSIGNED_INT, 0);
-}
-
-void drawAllBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
-	if (!blocks)
-		return;
-	
-	player.camera.model = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
-	player.camera.model = translate_mat4_vec3 (player.camera.model, (vec3) {blocks->data.x, blocks->data.y, blocks->data.z});
-	
-	int modelLoc = glGetUniformLocation(shader, "model");
-	glBindVertexArray(VAOID[0]);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
-	
-	glBindTexture(GL_TEXTURE_2D, blocks->data.id);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-	
-	drawAllBlocks (blocks->left, shader, VAOID);
-	drawAllBlocks (blocks->right, shader, VAOID);
-}
-
-void drawBlocks (node *blocks, GLuint shader, GLuint VAOID[]){
-	glUseProgram(shader);
-	
-	int viewLoc = glGetUniformLocation(shader, "view");
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &player.camera.view.ww);
-	int projLoc = glGetUniformLocation(shader, "proj");
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &player.camera.proj.ww);
-	
-	drawAllBlocks (blocks, shader, VAOID);
 }
 
 int intersect (vec3 position, ray r, float range) {
