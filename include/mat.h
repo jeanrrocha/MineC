@@ -26,6 +26,17 @@ typedef struct {
 
 typedef struct {
 	union {
+		int col[3];
+		struct {
+			int x;
+			int y;
+			int z;
+		};
+	};
+} vec3Int;
+
+typedef struct {
+	union {
 		GLfloat col[4];
 		struct {
 			GLfloat w;

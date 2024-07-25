@@ -1,6 +1,8 @@
 #ifndef AVL_H
 #define AVL_H
 
+#include "mat.h"
+
 typedef struct {
 	double x;
 	double y;
@@ -9,11 +11,21 @@ typedef struct {
 
 typedef vector point3D;
 
-typedef struct {
+typedef struct block {
 	int x;
 	int y;
 	int z;
 	int id;
+	short north;
+	short south;
+	short east;
+	short west;
+	short power;
+	bool powered;
+	bool power_source;
+	bool lit;
+	void (*update)(struct block *, struct CHUNK_MANAGER *);
+	bool tick;
 } block;
 
 typedef struct node {
@@ -21,6 +33,32 @@ typedef struct node {
 	char bal;
 	struct node *left, *right;
 } node;
+
+
+typedef struct {
+	vec3 pos;
+	node *blocks;
+} CHUNK;
+
+typedef struct {
+	vec3 currentPos;
+	CHUNK chunks[3][3][3];
+} CHUNK_MANAGER;
+
+typedef struct {
+	vec3 pos;
+	int id;
+	short north;
+	short south;
+	short east;
+	short west;
+	short power;
+	bool powered;
+	bool power_source;
+	bool lit;
+	void (*update)(struct block *, struct CHUNK_MANAGER *);
+	bool tick;
+} BLOCK;
 
 node* rotEE(node*);
 node* rotDD(node*);

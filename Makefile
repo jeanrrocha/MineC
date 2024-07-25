@@ -6,7 +6,6 @@ INCDIR := include
 SRCDIR := src
 LIBDIR := lib
 
-#$(INCDIR)/libglfw3dll.a
 CFLAGS   := -std=c2x -lm -lglfw3 -lgdi32
 CPPFLAGS := -I$(INCDIR) -L$(LIBDIR) -finput-charset=UTF-8 -MMD
 LDFLAGS  := 
@@ -42,7 +41,7 @@ define get_suffix
 endef
 
 # Compile recipe with 1° arg compiler and 2° arg flags
-define create_src_obj =
+define create_src_obj
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(1) $< -MF $(basename $@).d -o $@
 endef
@@ -72,9 +71,11 @@ $(call get_suffix,.dll,$(SRC)) : $(OBJDIR)/%.dll : %.c
 ## Compile executable
 
 $(EXE): $(SRCOBJS)
+	
 	@mkdir -p target/$(TARGET)
 	$(CC) $(SRCOBJS) -o $@ $(LDFLAGS)
-##
+
+	
 
 clean:
 	-rm -rf $(EXE) $(OBJDIR)
