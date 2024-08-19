@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "avl.h"
 
+/*
 node* rotEE(node* T) { 
 	node *aux = T->left;
 	T->left = aux->right;
@@ -144,33 +145,33 @@ node* rotDEremove (node *T, int *height) {
 	return aux2;
 }
 
-block max (node *T) {
+BLOCK max (node *T) {
 	if (!T)
-		return (block){-1, -1, -1, -1};
+		return (BLOCK){-1, -1, -1, -1};
 	
 	while (T->right)
 		T = T->right;
 	return T->data;
 }
 
-block min (node *T) {
+BLOCK min (node *T) {
 	if (!T)
-		return (block){-1, -1, -1, -1};
+		return (BLOCK){-1, -1, -1, -1};
 	
 	while (T->left)
 		T = T->left;
 	return T->data;
 }
 
-int compareBlocks (block first, block second) {
-	if (first.x != second.x)
-		return first.x < second.x;
-	if (first.y != second.y)
-		return first.y < second.y;
-	return first.z < second.z;
+int compareBlocks (BLOCK first, BLOCK second) {
+	if (first.pos.x != second.pos.x)
+		return first.pos.x < second.pos.x;
+	if (first.pos.y != second.pos.y)
+		return first.pos.y < second.pos.y;
+	return first.pos.z < second.pos.z;
 }
 
-node* insertNode (node *T, block data, int *height) {
+node* insertNode (node *T, BLOCK data, int *height) {
 	
 	if (!T) {
 		node* newNode = (node*)malloc(sizeof(node));
@@ -215,14 +216,14 @@ node* insertNode (node *T, block data, int *height) {
 	return T;
 }
 
-void insertBlock (node **T, block data) {
+void insertBlock (node **T, BLOCK data) {
 	
 	int height = 0;
 	
 	*T = insertNode (*T, data, &height);
 }
 
-node *removeNode (node *T, block data, int *height) {
+node *removeNode (node *T, BLOCK data, int *height) {
 	if (!T)
 		return NULL;
 	
@@ -271,7 +272,7 @@ node *removeNode (node *T, block data, int *height) {
 			free (T);
 			return aux;
 		} else {
-			block aux = T->bal == -1 ? max(T->left) : min(T->right);
+			BLOCK aux = T->bal == -1 ? max(T->left) : min(T->right);
 			T = removeNode (T, aux, height);
 			T->data = aux;
 			return T;
@@ -280,7 +281,7 @@ node *removeNode (node *T, block data, int *height) {
 	return T;
 }
 
-void removeBlock (node **T, block data) {
+void removeBlock (node **T, BLOCK data) {
 	if (!*T)
 		return;
 	
@@ -308,3 +309,4 @@ void destroyChunk (node *T) {
 	destroyChunk (T->right);
 	free (T);
 }
+*/

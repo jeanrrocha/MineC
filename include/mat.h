@@ -51,6 +51,7 @@ typedef struct {
 	
 	union {
 		vec4 row[4];
+		GLfloat elements[16];
 		struct {
 			GLfloat ww;
 			GLfloat wx;

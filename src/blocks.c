@@ -5,7 +5,33 @@
 #include "blocks.h"
 #include "math.h"
 
+void insert_block (TREE *tree, BLOCK b) {
+	tree_insert (tree, (void*)&b);
+}
+
+void erase_block (TREE *tree, BLOCK b) {
+	tree_erase (tree, (void*)&b);
+}
+
+void clear_chunk (TREE *tree) {
+	tree_clear (tree);
+}
+
+BLOCK* get_block (TREE *tree, BLOCK b) {
+	return (BLOCK*)tree_search (tree, (void*)&b);
+}
+
+BLOCK get_block_clone (TREE *tree, BLOCK b) {
+	return *get_block(tree, b);
+}
+
+BLOCK *get_block_from_chunk (CHUNK_MANAGER *chunks, BLOCK b) {
+	
+}
+
+/*
 block *getPointerToElement (node *chunks, block b) {
+	/*
 	while (chunks) {
 		if (compareBlocks(b, chunks->data))
 			chunks = chunks->left;
@@ -15,6 +41,7 @@ block *getPointerToElement (node *chunks, block b) {
 			return &chunks->data;
 	}
 	return NULL;
+	
 }
 
 
@@ -41,10 +68,10 @@ block *blockEast (node **chunks, block b) {
 block *blockWest (node **chunks, block b) {
 	return (getPointerToElement (*chunks, (block){b.x-1, b.y, b.z}));
 }
+*/
 
-
-void redstone_lamp_update (block *b, CHUNK_MANAGER *chunks) {
-	
+void redstone_lamp_update (BLOCK *b, CHUNK_MANAGER *chunks) {
+	/*
 	b->powered = false;
 	b->lit = false;
 	
@@ -101,24 +128,47 @@ void redstone_lamp_update (block *b, CHUNK_MANAGER *chunks) {
 	if (b->powered) {
 		b->lit = true;
 	}
+	*/
 }
 
 
-void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
+void redstone_dust_update (BLOCK *b, CHUNK_MANAGER *chunks) {
 	
-	
+	/*
 	block *down;
 	block *up;
 	block *north;
 	block *south;
 	block *east;
 	block *west;
+	
+	block *up_north;
+	block *up_south;
+	block *up_east;
+	block *up_west;
+	
+	block *down_north;
+	block *down_south;
+	block *down_east;
+	block *down_west;
+	
 	down = blockDown(&chunks->chunks[1][1][1].blocks, *b);
 	up = blockUp(&chunks->chunks[1][1][1].blocks, *b);
+	
 	north = blockNorth(&chunks->chunks[1][1][1].blocks, *b);
 	south = blockSouth(&chunks->chunks[1][1][1].blocks, *b);
 	east = blockEast(&chunks->chunks[1][1][1].blocks, *b);
 	west = blockWest(&chunks->chunks[1][1][1].blocks, *b);
+	
+	up_north = blockNorth(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y+1, b->z});
+	up_south = blockSouth(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y+1, b->z});
+	up_east = blockEast(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y+1, b->z});
+	up_west = blockWest(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y+1, b->z});
+	
+	down_north = blockNorth(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y-1, b->z});
+	down_south = blockSouth(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y-1, b->z});
+	down_east = blockEast(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y-1, b->z});
+	down_west = blockWest(&chunks->chunks[1][1][1].blocks, (block){b->x, b->y-1, b->z});
 	
 	b->north = 0;
 	b->south = 0;
@@ -141,6 +191,34 @@ void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
 		}
 	}
 	
+	if (up_north) {
+		if (up_north->id == b->id) {
+			b->north = 1;
+			if (up_north->power > b->power)
+				b->power = up_north->power - 1;
+		}
+		
+		if (up_north->power_source) {
+			b->north = 1;
+			b->power = up_north->power;
+		}
+		
+	}
+	
+	if (down_north) {
+		if (down_north->id == b->id) {
+			b->north = 1;
+			if (down_north->power > b->power)
+				b->power = down_north->power - 1;
+		}
+		
+		if (down_north->power_source) {
+			b->north = 1;
+			b->power = down_north->power;
+		}
+		//
+	}
+	
 	if (south) {
 		if (south->id == b->id) {
 			b->south = 1;
@@ -153,7 +231,36 @@ void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
 			b->power = south->power;
 		}
 	}
-
+	
+	if (up_south) {
+		
+		if (up_south->id == b->id) {
+			b->south = 1;
+			if (up_south->power > b->power)
+				b->power = up_south->power - 1;
+		}
+		
+		if (up_south->power_source) {
+			b->south = 1;
+			b->power = up_south->power;
+		}
+		//
+	}
+	
+	if (down_south) {
+		if (down_south->id == b->id) {
+			b->south = 1;
+			if (down_south->power > b->power)
+				b->power = down_south->power - 1;
+		}
+		
+		if (down_south->power_source) {
+			b->south = 1;
+			b->power = down_south->power;
+		}
+		//
+	}
+	
 	if (east) {
 		if (east->id == b->id) {
 			b->east = 1;
@@ -165,6 +272,36 @@ void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
 			b->east = 1;
 			b->power = east->power;
 		}
+	}
+	
+	if (up_east) {
+		
+		if (up_east->id == b->id) {
+			b->east = 1;
+			if (up_east->power > b->power)
+				b->power = up_east->power - 1;
+		}
+		
+		if (up_east->power_source) {
+			b->east = 1;
+			b->power = up_east->power;
+		}
+		//
+	}
+	
+	if (down_east) {
+		
+		if (down_east->id == b->id) {
+			b->east = 1;
+			if (down_east->power > b->power)
+				b->power = down_east->power - 1;
+		}
+		
+		if (down_east->power_source) {
+			b->east = 1;
+			b->power = down_east->power;
+		}
+		//
 	}
 	
 	if (west) {
@@ -179,7 +316,37 @@ void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
 			b->power = west->power;
 		}
 	}
-
+	
+	if (up_west) {
+		
+		if (up_west->id == b->id) {
+			b->west = 1;
+			if (up_west->power > b->power)
+				b->power = up_west->power - 1;
+		}
+		
+		if (up_west->power_source) {
+			b->west = 1;
+			b->power = up_west->power;
+		}
+		//
+	}
+	
+	if (down_west) {
+		
+		if (down_west->id == b->id) {
+			b->west = 1;
+			if (down_west->power > b->power)
+				b->power = down_west->power - 1;
+		}
+		
+		if (down_west->power_source) {
+			b->west = 1;
+			b->power = down_west->power;
+		}
+		//
+	}
+	
 	
 	if (b->power > 0)
 		b->lit = true;
@@ -205,9 +372,33 @@ void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
 			}
 		}
 		
+		if (up_north) {
+			if (up_north->id == b->id && up_north->power < b->power) {
+				up_north->update(up_north, chunks);
+			}
+		}
+		
+		if (down_north) {
+			if (down_north->id == b->id && down_north->power < b->power) {
+				down_north->update(down_north, chunks);
+			}
+		}
+		
 		if (south) {
 			if (south->id == b->id && south->power < b->power) {
 				south->update(south, chunks);
+			}
+		}
+		
+		if (up_south) {
+			if (up_south->id == b->id && up_south->power < b->power) {
+				up_south->update(up_south, chunks);
+			}
+		}
+		
+		if (down_south) {
+			if (down_south->id == b->id && down_south->power < b->power) {
+				down_south->update(down_south, chunks);
 			}
 		}
 		
@@ -217,18 +408,43 @@ void redstone_dust_update (block *b, CHUNK_MANAGER *chunks) {
 			}
 		}
 		
+		if (up_east) {
+			if (up_east->id == b->id && up_east->power < b->power) {
+				up_east->update(up_east, chunks);
+			}
+		}
+		
+		if (down_east) {
+			if (down_east->id == b->id && down_east->power < b->power) {
+				down_east->update(down_east, chunks);
+			}
+		}
+		
 		if (west) {
 			if (west->id == b->id && west->power < b->power) {
 				west->update(west, chunks);
 			}
 		}
+		
+		if (up_west) {
+			if (up_west->id == b->id && up_west->power < b->power) {
+				up_west->update(up_west, chunks);
+			}
+		}
+		
+		if (down_west) {
+			if (down_west->id == b->id && down_west->power < b->power) {
+				down_west->update(down_west, chunks);
+			}
+		}
 	}
+	*/
 }
 
 
 
-void piston_update (block *b, CHUNK_MANAGER *chunks) {
-	
+void piston_update (BLOCK *b, CHUNK_MANAGER *chunks) {
+	/*
 	b->lit = false;
 	b->powered = false;
 
@@ -325,5 +541,5 @@ void piston_update (block *b, CHUNK_MANAGER *chunks) {
 			removeBlockToChunk (chunks, (BLOCK){(vec3){up->x, up->y, up->z}, up->id});
 		b->tick = false;
 	}
-	
+	*/
 }
