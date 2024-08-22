@@ -1,5 +1,5 @@
 #include "tree.h"
-#include "avl.h"
+#include "types.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -159,26 +159,49 @@ TREE_NODE *_tree_erase (const void *key, TREE_NODE *node, TREE tree[restrict sta
 	} 
 	else {
 		if (!node->left && !node->right) {
+			
+			
 			tree->_height = 1;
 			free (node->data);
 			free (node);
 			return NULL;
+			
+			
 		} else if (!node->left || !node->right) {
+			//printf ("BBB\n");
+			
 			tree->_height = 1;
 			TREE_NODE* aux = node->left ? node->left : node->right;
 			if (node->left)
 				node->left = NULL;
 			else
 				node->right = NULL;
+			
+			
 			free (node->data);
 			free (node);
 			return aux;
 		} else {
-			TREE_NODE* aux = node->bal == -1 ? _tree_max(node->left) : _tree_min(node->right);
+			
+			
+			//printf ("AAA\n");
+			TREE_NODE* aux = _tree_min(node->right);
+			
+			//printf ("%f %f %f\n", a.pos.x, a.pos.y, a.pos.z);
+			//printf ("%f %f %f\n", b.pos.x, b.pos.y, b.pos.z);
+			
+			//printf ("%d\n%x\n%x\n", node->bal, aux, _tree_min(node->right));
+			
+			//printf ("%d\n", tree->compar(node->data, key));
+			
 			memcpy (node->data, aux->data, tree->sz);
 			memcpy (aux->data, key, tree->sz);
-			node = _tree_erase (key, node, tree);
+			node->right = _tree_erase (key, node->right, tree);
+			
+			//printf ("%d\n", tree->compar(key, node->data));
 			return node;
+			
+			
 		}
 	}
 	return node;

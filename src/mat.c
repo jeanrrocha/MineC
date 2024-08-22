@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "types.h"
+
 vec3 scale_vec3 (vec3 vector, double x) {
 	
 	vector.x *= x;

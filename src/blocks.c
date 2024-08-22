@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "avl.h"
-#include "mat.h"
-#include "blocks.h"
+#include "types.h"
+#include "tree.h"
+
 #include "math.h"
 
 void insert_block (TREE *tree, BLOCK b) {
@@ -25,8 +25,86 @@ BLOCK get_block_clone (TREE *tree, BLOCK b) {
 	return *get_block(tree, b);
 }
 
+#define CHUNK_SIZE 64
+
 BLOCK *get_block_from_chunk (CHUNK_MANAGER *chunks, BLOCK b) {
+	vec3 aux;
+
+	aux.x = b.pos.x>=0?(int)b.pos.x/64:(int)b.pos.x/64-1;
+	aux.y = b.pos.y>=0?(int)b.pos.y/64:(int)b.pos.y/64-1;
+	aux.z = b.pos.z>=0?(int)b.pos.z/64:(int)b.pos.z/64-1;
 	
+	if (aux.x < chunks->currentPos.x-1 || aux.x > chunks->currentPos.x+1)
+		return NULL;
+	if (aux.y < chunks->currentPos.y-1 || aux.y > chunks->currentPos.y+1)
+		return NULL;
+	if (aux.z < chunks->currentPos.z-1 || aux.z > chunks->currentPos.z+1)
+		return NULL;
+	
+	return get_block(chunks->chunks[(int)(aux.x+1 - chunks->currentPos.x)][(int)(aux.y+1 - chunks->currentPos.y)][(int)(aux.z+1 - chunks->currentPos.z)].blocks, b);
+}
+
+void insert_block_from_chunk (CHUNK_MANAGER *chunks, BLOCK b) {
+	vec3 aux;
+
+	aux.x = b.pos.x>=0?(int)b.pos.x/64:(int)b.pos.x/64-1;
+	aux.y = b.pos.y>=0?(int)b.pos.y/64:(int)b.pos.y/64-1;
+	aux.z = b.pos.z>=0?(int)b.pos.z/64:(int)b.pos.z/64-1;
+	
+	if (aux.x < chunks->currentPos.x-1 || aux.x > chunks->currentPos.x+1)
+		return;
+	if (aux.y < chunks->currentPos.y-1 || aux.y > chunks->currentPos.y+1)
+		return;
+	if (aux.z < chunks->currentPos.z-1 || aux.z > chunks->currentPos.z+1)
+		return;
+	
+	return insert_block(chunks->chunks[(int)(aux.x+1 - chunks->currentPos.x)][(int)(aux.y+1 - chunks->currentPos.y)][(int)(aux.z+1 - chunks->currentPos.z)].blocks, b);
+}
+
+
+void erase_block_from_chunk (CHUNK_MANAGER *chunks, BLOCK b) {
+	vec3 aux;
+
+	aux.x = b.pos.x>=0?(int)b.pos.x/64:(int)b.pos.x/64-1;
+	aux.y = b.pos.y>=0?(int)b.pos.y/64:(int)b.pos.y/64-1;
+	aux.z = b.pos.z>=0?(int)b.pos.z/64:(int)b.pos.z/64-1;
+	
+	if (aux.x < chunks->currentPos.x-1 || aux.x > chunks->currentPos.x+1)
+		return;
+	if (aux.y < chunks->currentPos.y-1 || aux.y > chunks->currentPos.y+1)
+		return;
+	if (aux.z < chunks->currentPos.z-1 || aux.z > chunks->currentPos.z+1)
+		return;
+	
+	return erase_block(chunks->chunks[(int)(aux.x+1 - chunks->currentPos.x)][(int)(aux.y+1 - chunks->currentPos.y)][(int)(aux.z+1 - chunks->currentPos.z)].blocks, b);
+}
+
+
+
+/*
+TREE *relativePos (CHUNK_MANAGER *chunks, vec3 pos) {
+	vec3 aux;
+	aux.x = pos.x>=0?(int)pos.x/64:(int)pos.x/64-1;
+	aux.y = pos.y>=0?(int)pos.y/64:(int)pos.y/64-1;
+	aux.z = pos.z>=0?(int)pos.z/64:(int)pos.z/64-1;
+	
+	if (aux.x < chunks->currentPos.x-1 || aux.x > chunks->currentPos.x+1)
+		return NULL;
+	if (aux.y < chunks->currentPos.y-1 || aux.y > chunks->currentPos.y+1)
+		return NULL;
+	if (aux.z < chunks->currentPos.z-1 || aux.z > chunks->currentPos.z+1)
+		return NULL;
+	
+	return chunks->chunks[(int)(aux.x+1 - chunks->currentPos.x)][(int)(aux.y+1 - chunks->currentPos.y)][(int)(aux.z+1 - chunks->currentPos.z)].blocks;
+}
+*/
+
+
+
+
+BLOCK *block_down (TREE* tree, BLOCK b) {
+	b.pos.y--;
+	return get_block(tree, b);
 }
 
 /*
@@ -71,6 +149,8 @@ block *blockWest (node **chunks, block b) {
 */
 
 void redstone_lamp_update (BLOCK *b, CHUNK_MANAGER *chunks) {
+	printf ("AAA\n");
+	
 	/*
 	b->powered = false;
 	b->lit = false;

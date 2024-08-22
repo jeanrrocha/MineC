@@ -1,2 +1,2 @@
-obj/release/src/tree.o: src/tree.c include/tree.h include/avl.h \
- include/mat.h include/avl.h
+obj/release/src/tree.o: src/tree.c include/tree.h include/types.h \
+ include/GLFW/glfw3.h include/tree.h include/types.h

@@ -1,12 +1,17 @@
 #include <stdio.h>
-#include <avl.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include "types.h"
 
 #include "main.h"
+#include "stb_image.h"
+#include "blocks.h"
+#include "mat.h"
+#include "blocks.h"
+#include "tree.h"
 
 #define FRAGMENT 'f'
 #define VERTEX 'v'
@@ -38,13 +43,6 @@ GLuint shaderProgram_2D;
 
 vec3 blocksInRange[1331] = {(vec3){0, 0, 0}};
 CHUNK_MANAGER test_chunks;
-
-typedef struct {
-	vec2 size;
-	vec4 pos;
-	vec2 vertex[2];
-	void (*func);
-} button;
 
 void print_block (BLOCK b) {
 	printf ("XYZ: %f %f %f\n", b.pos.x, b.pos.y, b.pos.z);
@@ -79,41 +77,28 @@ void generate_shader (GLuint *shader, char *source) {
 	glDeleteShader(fragmentShader);
 }
 
-mat4 IDENTITY = (mat4){(vec4){1.0, 0.0, 0.0, 0.0}, (vec4){0.0, 1.0, 0.0, 0.0}, (vec4){0.0, 0.0, 1.0, 0.0}, (vec4){0.0, 0.0, 0.0, 1.0}};
+
 
 typedef struct {
-	GLfloat yaw;
-	GLfloat pitch;
-	GLfloat lastX;
-	GLfloat lastY;
-} MOUSE_MANAGER;
+	int VAO;
+	int VBO;
+	int EBO;
+	vec2 size;
+	vec2 normalized_size;
+	vec4 pos;
+	vec2 absolute_pos;
+	int texture;
+} element_2d;
 
-typedef struct {
-	char *current_world; //will probably be changed into a struct;
-	char *path_to_world;
-	char *path_to_world_chunks;
-	CHUNK_MANAGER *chunks_info;
-	MOUSE_MANAGER *mouse_info;
-	Player *player; //must change into a vector later;
-	float deltaTime;
-} game_state;
+void main_menu_single_player_button(game_state* state) {
+	state->state = gameplay;
+}
 
 void loadWorld (game_state *state);
 void saveWorld (game_state *state);
 
 game_state ESTADO;
 MOUSE_MANAGER mouse;
-
-
-
-void print_all (TREE_NODE* node) {
-	if (!node)
-		return;
-	
-	print_all (node->left);
-	print_block(*(BLOCK*)node->data);
-	print_all (node->right);
-}
 
 int comp_blocks (const void *a, const void *b) {
 	BLOCK first = *(BLOCK*)a;
@@ -131,17 +116,89 @@ int comp_blocks (const void *a, const void *b) {
 
 void drawALL (game_state *state, GLuint *shaders, GLuint *VAOID, ray r);
 
-TREE *t;
+
+BUTTON button_init (game_state *state, vec2 size, vec2 pos, float* vertexs, int* indexes, char* texture_path, void (*exec)(game_state*)) {
+	BUTTON b;
+	b.exec = exec;
+	b.size = size;
+	b.normalized_size = (vec2){size.x / state->window_width, size.y / state->window_height};
+	b.absolute_pos = pos;
+	b.pos = (vec4){pos.x - b.normalized_size.x / 2, pos.y - b.normalized_size.y / 2};
+	b.vertex[0] = (vec2){b.pos.w * state->window_width, b.pos.x * state->window_height};
+	b.vertex[1] = (vec2){b.vertex[0].x + size.x, b.vertex[0].y + size.y};
+	
+	glGenTextures (1, &b.texture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, b.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	int widht_img, height_img, num_col_ch;
+	unsigned char* textureBytes = stbi_load (texture_path, &widht_img, &height_img, &num_col_ch, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widht_img, height_img, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureBytes);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(textureBytes);
+	
+	if (vertexs && indexes) {
+		
+	} else {
+		glGenVertexArrays(1, &b.VAO);
+		glGenBuffers(1, &b.VBO);
+		glGenBuffers(1, &b.EBO);
+		
+		glBindVertexArray(b.VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, b.VBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b.EBO);
+		
+		glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(float), (float[]){0., 0., 0., 0., 0., size.y / state->window_height, 0., 1., size.x / state->window_width, size.y / state->window_height, 1., 1., size.x / state->window_width, 0., 1., 0.}, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(int), (int[]){0, 1, 2, 0, 2, 3}, GL_STATIC_DRAW);
+		
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)(sizeof(float)*2));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
+	
+	return b;
+}
+
+void draw_button (game_state *state, BUTTON b) {
+	glBindVertexArray(b.VAO);
+	glBindTexture(GL_TEXTURE_2D, b.texture);
+
+	int pos = glGetUniformLocation(shaderProgram_2D, "p");
+	glUniform4fv(pos, 1, &b.pos.w);
+
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
 
 int main(void)
 {	
-	t = tree_init(sizeof(BLOCK), comp_blocks);
-	
 	ESTADO.current_world = malloc(128);
 	ESTADO.path_to_world = malloc(140);
 	ESTADO.path_to_world_chunks = malloc(150);
 	ESTADO.chunks_info = &test_chunks;
 	ESTADO.player = &player;
+	ESTADO.state = main_menu;
+	ESTADO.window_width = 1760;
+	ESTADO.window_height = 990;
+	
+	
+	for (int i = 0; i < 12; i++)
+		ESTADO.block_update_functions[i] = NULL;
+	
+	ESTADO.block_update_functions[redstone_lamp] = redstone_lamp_update;
+	ESTADO.block_update_functions[redstone_ore] = redstone_dust_update;
+	ESTADO.block_update_functions[piston] = piston_update;
+	
+	ESTADO.buttons_info = (BUTTON**) malloc(sizeof(BUTTON*)*1);
+	ESTADO.buttons_info[main_menu] = (BUTTON*) malloc(sizeof(BUTTON)*1);
 	
 	mouse.yaw = -90.0f;
 	mouse.pitch = 0.0f;
@@ -164,7 +221,7 @@ int main(void)
 	/* Inicialianzo o GLFW e a janela */
 	
 	GLFWwindow* window;
-	
+	ESTADO.window = window;
 	
 	if (!glfwInit()){
 		printf ("Failed to initialize GLFW.\n");
@@ -349,45 +406,6 @@ int main(void)
 	
 	printf ("%f\n", ((2.0 * 400 + 1.0) / windowWidth - 1.0));
 	
-	
-	GLfloat sing[] =
-	{   
-		0.f, 0., 0.f, 0.f,
-		0.f, (40.f / windowHeight), 0.f, 1.f,
-		(400.f / windowWidth), (40.f / windowHeight), 1.f, 1.f,
-		(400.f / windowWidth), 0., 1.f, 0.f,
-	};
-
-	GLuint singIDX[] =
-	{
-		0, 1, 2,
-		0, 2, 3
-	};
-	
-	GLuint menuVAO = 0;
-	GLuint menuVBO = 0;
-	GLuint menuEBO = 0;
-	glGenVertexArrays(1, &menuVAO);
-	glGenBuffers(1, &menuVBO);
-	glGenBuffers(1, &menuEBO);
-	
-	glBindVertexArray(menuVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, menuVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, menuEBO);
-	
-	glBufferData(GL_ARRAY_BUFFER, sizeof(sing), sing, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(singIDX), singIDX, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)(sizeof(float)*2));
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	
-
-	
 	GLuint VAOID[1] = {0};
 	
 	glGenVertexArrays(1, &VAOID[0]);
@@ -486,6 +504,7 @@ int main(void)
 		strcat (block, blockPaths[i]);
 		
 		glGenTextures (1, &texture1);
+		printf ("%d\n", texture1);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -508,35 +527,10 @@ int main(void)
 	
 	player.currentBlock = 0;
 	
-	//fillSkyBlock();
-	
-	int state = 0;
-	mat4 ORTHO2D = (mat4){(vec4){2.0, 0.0, 0.0, 0.0}, (vec4){0.0, -2.0, 0.0, 0.0}, (vec4){0.0, 0.0, -1.0, 0.0}, (vec4){-1.0, 1.0, 0.0, 1.0}};
-	int HUD = 0;
-	glGetIntegerv(GL_TEXTURE_BINDING_2D, &HUD);
-	HUD += 1;
-	glGenTextures (1, &HUD);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, HUD);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	
-	unsigned char* textureBytes = stbi_load ("./resources/textures/singleplayer.png", &widthImg, &heightImg, &numColCh, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureBytes);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(textureBytes);
-	
-	button singleplayer;
-	singleplayer.size = (vec2){400., 40.};
-	singleplayer.pos = (vec4){0.385795, 0.345454, 0., 0.};
-	singleplayer.vertex[0] = (vec2){680., 342.};
-	singleplayer.vertex[1] = (vec2){1080., 382.};
+	ESTADO.buttons_info[main_menu][main_menu_single_player] = button_init (&ESTADO, (vec2){400., 40.}, (vec2){0.5, 0.365}, NULL, NULL, "./resources/textures/singleplayer.png", main_menu_single_player_button);
 	
 	while (!glfwWindowShouldClose(window))
 	{
-
 		do {
 			currentFrame = glfwGetTime();
 			deltaTime = currentFrame - lastFrame;
@@ -546,29 +540,17 @@ int main(void)
 		glClearColor(0.5059f, 0.8314f, 0.9804f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		if (state == 0) {
+		if (ESTADO.state == main_menu) {
 			
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);  
-			
-			double mouseX;
-			double mouseY;
-			
-			glfwGetCursorPos (window, &mouseX, &mouseY);
-			
-			//printf ("%lf %lf\n", mouseX, mouseY);
-			
+
 			glUseProgram(shaderProgram_2D);
-			glBindVertexArray(menuVAO);
-			glBindTexture(GL_TEXTURE_2D, 13);
 			
-			int pos = glGetUniformLocation(shaderProgram_2D, "p");
-			glUniform4fv(pos, 1, &singleplayer.pos.w);
-			
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			draw_button (&ESTADO, ESTADO.buttons_info[main_menu][main_menu_single_player]);
 			
 			if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-				if (mouseX >= singleplayer.vertex[0].x && mouseX < singleplayer.vertex[1].x && mouseY >= singleplayer.vertex[0].y && mouseY < singleplayer.vertex[1].y)
-					state = 1;
+				if (ESTADO.mouse_info->lastX >= ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[0].x && ESTADO.mouse_info->lastX < ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[1].x && ESTADO.mouse_info->lastY >= ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[0].y && ESTADO.mouse_info->lastY < ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[1].y)
+					ESTADO.state = 1;
 			}
 			
 			if (help > 0)
@@ -576,13 +558,13 @@ int main(void)
 			
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && help <= 0)
 				glfwSetWindowShouldClose(window, 1);
-		} else if (state == 1) {
+		} else if (ESTADO.state == 1) {
 			memset(ESTADO.current_world, 0, strlen(ESTADO.current_world));
 			fgets(ESTADO.current_world, 128, stdin);
 			ESTADO.current_world[strcspn(ESTADO.current_world, "\n")] = 0;
 			loadWorld (&ESTADO);
-			state = 2;
-		} else if (state == 2) {
+			ESTADO.state = 2;
+		} else if (ESTADO.state == 2) {
 			
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 			
@@ -593,34 +575,31 @@ int main(void)
 			processMovement (window, &player, deltaTime, &test_chunks);
 			
 			if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
-				player.currentBlock = 0;
+				player.currentBlock = dirt;
 			
 			if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-				player.currentBlock = 1;
+				player.currentBlock = grass;
 			
 			if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-				player.currentBlock = 2;
+				player.currentBlock = bricks;
 			
 			if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-				player.currentBlock = 3;
+				player.currentBlock = oak_log;
 			
 			if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-				player.currentBlock = 4;
+				player.currentBlock = leaves_oak;
 			
 			if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
-				player.currentBlock = 5;
+				player.currentBlock = redstone_block;
 			
 			if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS)
-				player.currentBlock = 6;
+				player.currentBlock = redstone_lamp;
 			
 			if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
-				player.currentBlock = 7;
+				player.currentBlock = redstone_ore;
 			
 			if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS)
-				player.currentBlock = 9;
-			
-			if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
-				player.currentBlock = 11;
+				player.currentBlock = piston;
 			
 			if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
 				cameraSpeed += 0.001f;
@@ -630,12 +609,12 @@ int main(void)
 			
 			ray r = initializeRay (player.camera.cameraPos, player.camera.cameraFront);
 			
-			/*
+			
 			if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && help <= 0) {
 				BLOCK aux = firstBlock(&test_chunks, r);
 				if (aux.id != -1) {
-					//printf ("%d %d %d %d %d %d %d %d %d %d %d %d %x %d\n", aux.x, aux.y, aux.z, aux.id, aux.north, aux.south, aux.east, aux.west, aux.power, aux.powered, aux.power_source, aux.lit, aux.update, aux.tick);
-					removeBlockToChunk (&test_chunks, aux);
+					printf ("%f %f %f %d %d %d %d %d %d %d %d %d %d\n", aux.pos.x, aux.pos.y, aux.pos.z, aux.id, aux.north, aux.south, aux.east, aux.west, aux.power, aux.powered, aux.power_source, aux.lit, aux.tick);
+					erase_block_from_chunk (&test_chunks, aux);
 				}
 				help = 0.2f;
 			}
@@ -653,67 +632,58 @@ int main(void)
 				
 				vec3 aux = bAux.pos;
 				BLOCK posBlock = vecToBlock (aux);
-				/*
-				if (!isBlock (chunk, sum_vec3 (aux, up)) && intersect(sum_vec3 (aux, up), r, 5) && player.camera.cameraPos.y > aux.y+0.5) {
+				
+				if (!isBlock (relativePos(&test_chunks, sum_vec3 (aux, up)), sum_vec3 (aux, up)) && intersect(sum_vec3 (aux, up), r, 5) && player.camera.cameraPos.y > aux.y+0.5) {
 					
 					posBlock = vecToBlock (sum_vec3 (aux, up));
 					posBlock.id = player.currentBlock;
 					
-				} else if (!isBlock (chunk, sum_vec3 (aux, down)) && intersect(sum_vec3 (aux, down), r, 5) && player.camera.cameraPos.y < aux.y-0.5) {
+				} else if (!isBlock (relativePos(&test_chunks, sum_vec3 (aux, up)), sum_vec3 (aux, down)) && intersect(sum_vec3 (aux, down), r, 5) && player.camera.cameraPos.y < aux.y-0.5) {
 					
 					posBlock = vecToBlock (sum_vec3 (aux, down));
 					posBlock.id = player.currentBlock;
 					
-				} else if (!isBlock (chunk, sum_vec3 (aux, right)) &&  intersect(sum_vec3 (aux, right), r, 5) && player.camera.cameraPos.x > aux.x+0.5) {
+				} else if (!isBlock (relativePos(&test_chunks, sum_vec3 (aux, up)), sum_vec3 (aux, right)) &&  intersect(sum_vec3 (aux, right), r, 5) && player.camera.cameraPos.x > aux.x+0.5) {
 					
 					posBlock = vecToBlock (sum_vec3 (aux, right));
 					posBlock.id = player.currentBlock;
 					
-				} else if (!isBlock (chunk, sum_vec3 (aux, left)) &&  intersect(sum_vec3 (aux, left), r, 5) && player.camera.cameraPos.x < aux.x-0.5) {
+				} else if (!isBlock (relativePos(&test_chunks, sum_vec3 (aux, up)), sum_vec3 (aux, left)) &&  intersect(sum_vec3 (aux, left), r, 5) && player.camera.cameraPos.x < aux.x-0.5) {
 					
 					posBlock = vecToBlock (sum_vec3 (aux, left));
 					posBlock.id = player.currentBlock;
 				 
-				} else if (!isBlock (chunk, sum_vec3 (aux, front)) &&  intersect(sum_vec3 (aux, front), r, 5) && player.camera.cameraPos.z > aux.z+0.5) {
+				} else if (!isBlock (relativePos(&test_chunks, sum_vec3 (aux, up)), sum_vec3 (aux, front)) &&  intersect(sum_vec3 (aux, front), r, 5) && player.camera.cameraPos.z > aux.z+0.5) {
 					
 					posBlock = vecToBlock (sum_vec3 (aux, front));
 					posBlock.id = player.currentBlock;
 				
-				} else if (!isBlock (chunk, sum_vec3 (aux, back)) &&  intersect(sum_vec3 (aux, back), r, 5) && player.camera.cameraPos.z < aux.z-0.5) {
+				} else if (!isBlock (relativePos(&test_chunks, sum_vec3 (aux, up)), sum_vec3 (aux, back)) &&  intersect(sum_vec3 (aux, back), r, 5) && player.camera.cameraPos.z < aux.z-0.5) {
 					
 					posBlock = vecToBlock (sum_vec3 (aux, back));
 					posBlock.id = player.currentBlock;
 					
 				}
-				*/
-				/*
+				
+				
 				if (posBlock.id == 6) {
 					posBlock.power = 15;
 					posBlock.powered = true;
 					posBlock.power_source = true;
 				}
-				if (posBlock.id == 7)
-					posBlock.update = redstone_lamp_update;
 				
 				if (posBlock.id == 9) {
-					block *down;
-					if (down = blockDown(&test_chunks.chunks[1][1][1].blocks, posBlock)) {
-						posBlock.update = redstone_dust_update;
-					} else {
+					if (!block_down(test_chunks.chunks[1][1][1].blocks, posBlock)) 
 						posBlock.id = -1;
-					}
 				}
 				
-				if (posBlock.id == 11)
-					posBlock.update = piston_update;
-				
 				if (posBlock.id != -1) {
-					insertBlockToChunk (&test_chunks, (BLOCK){(vec3){posBlock.x, posBlock.y, posBlock.z}, posBlock.id, posBlock.north, posBlock.south, posBlock.east, posBlock.west, posBlock.power, posBlock.powered, posBlock.power_source, posBlock.lit, posBlock.update, posBlock.tick});
+					insert_block_from_chunk (&test_chunks, posBlock);
 					help = 0.2f;
 				}
 				
 			}
-			*/
+			
 			if (help > 0)
 				help -= deltaTime;
 			if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
@@ -730,14 +700,14 @@ int main(void)
 				player.onGround = true;
 				player.isFlying = false;
 				
-				player.collisionBox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
-				player.collisionBox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
-				player.collisionBox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
-				player.collisionBox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
-				player.collisionBox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
-				player.collisionBox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
-				player.collisionBox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
-				player.collisionBox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
+				player.collisionbox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
+				player.collisionbox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
+				player.collisionbox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
+				player.collisionbox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
+				player.collisionbox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
+				player.collisionbox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
+				player.collisionbox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
+				player.collisionbox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
 			}
 			cameraSpeed = 4.317f;
 			
@@ -752,7 +722,7 @@ int main(void)
 			
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 				saveWorld (&ESTADO);
-				state = 0;
+				ESTADO.state = 0;
 				help = 0.2f;
 			}
 		}
@@ -812,10 +782,8 @@ void drawAllBlocks (TREE_NODE* node, CHUNK_MANAGER *chunks, GLuint shader, GLuin
 	glBindVertexArray(VAOID[0]);
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &player.camera.model.ww);
 	
-	if (data.update) {
-		//data.update((BLOCK*)node->data, chunks);
-	}
-	
+	if (ESTADO.block_update_functions[data.id])
+		ESTADO.block_update_functions[data.id]((BLOCK*)node->data, chunks);
 	
 	glBindTexture(GL_TEXTURE_2D, data.id+data.lit);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
@@ -871,10 +839,8 @@ BLOCK firstBlock (CHUNK_MANAGER *chunks, ray r) {
 
 	for (int i = 0; i < 1331; i++, aux = base) {
 		aux = sum_vec3(aux, blocksInRange[i]);
-		b = get_block (relativePos(chunks, aux), vecToBlock(aux));
-		
+		b = get_block_from_chunk (chunks, vecToBlock(aux));
 		if (intersect(aux, r, 5) && b && b->id != -1) {
-			print_block(*b);
 			return *b;
 		}
 	}
@@ -928,18 +894,18 @@ void processMovement (GLFWwindow* window, Player *player, float deltaTime, CHUNK
 			if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, player->VSpeed, chunks)) {
 				player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
 				for (int i = 0; i < 8; i++)
-					player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+					player->collisionbox.vertex[i] = sum_vec3 (player->collisionbox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
 			} else {
 
 				for (int i = 0; i < 4; i++) {
-					player->collisionBox.vertex[i].y = round(player->collisionBox.vertex[i].y);
+					player->collisionbox.vertex[i].y = round(player->collisionbox.vertex[i].y);
 				}
 				
 				for (int i = 4; i < 8; i++) {
-					player->collisionBox.vertex[i].y = player->collisionBox.vertex[0].y+1.8;
+					player->collisionbox.vertex[i].y = player->collisionbox.vertex[0].y+1.8;
 				}
 
-				player->camera.cameraPos.y = player->collisionBox.vertex[0].y + 1.62;
+				player->camera.cameraPos.y = player->collisionbox.vertex[0].y + 1.62;
 
 				player->VSpeed = 0;
 				player->onGround = true;
@@ -974,18 +940,18 @@ void processMovement (GLFWwindow* window, Player *player, float deltaTime, CHUNK
 			if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, player->VSpeed, chunks)) {
 				player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
 				for (int i = 0; i < 8; i++)
-					player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+					player->collisionbox.vertex[i] = sum_vec3 (player->collisionbox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
 			} else {
 
 				for (int i = 0; i < 4; i++) {
-					player->collisionBox.vertex[i].y = round(player->collisionBox.vertex[i].y);
+					player->collisionbox.vertex[i].y = round(player->collisionbox.vertex[i].y);
 				}
 				
 				for (int i = 4; i < 8; i++) {
-					player->collisionBox.vertex[i].y = player->collisionBox.vertex[0].y+1.8;
+					player->collisionbox.vertex[i].y = player->collisionbox.vertex[0].y+1.8;
 				}
 
-				player->camera.cameraPos.y = player->collisionBox.vertex[0].y + 1.62;
+				player->camera.cameraPos.y = player->collisionbox.vertex[0].y + 1.62;
 
 				player->VSpeed = 0;
 				player->onGround = true;
@@ -1004,7 +970,7 @@ void processMovement (GLFWwindow* window, Player *player, float deltaTime, CHUNK
 				if (!detectCollisionPlayer (window, player, (vec3){0, 1, 0}, deltaTime, player->VSpeed, chunks)) {
 					player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
 					for (int i = 0; i < 8; i++)
-						player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
+						player->collisionbox.vertex[i] = sum_vec3 (player->collisionbox.vertex[i], scale_vec3 (player->camera.cameraUp, player->VSpeed * deltaTime));
 				} else
 					player->VSpeed = 0;
 			} else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE && isPressedSpace)
@@ -1092,13 +1058,13 @@ void processMovement (GLFWwindow* window, Player *player, float deltaTime, CHUNK
 		if (!detectCollisionPlayer (window, player, (vec3){direction.x, 0, 0}, deltaTime, 1, chunks)) {
 			player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, (vec3){direction.x, 0, 0});
 			for (int i = 0; i < 8; i++)
-				player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], (vec3){direction.x, 0, 0});
+				player->collisionbox.vertex[i] = sum_vec3 (player->collisionbox.vertex[i], (vec3){direction.x, 0, 0});
 		}
 		
 		if (!detectCollisionPlayer (window, player, (vec3){0, 0, direction.z}, deltaTime, 1, chunks)) {
 			player->camera.cameraPos = sum_vec3 (player->camera.cameraPos, (vec3){0, 0, direction.z});
 			for (int i = 0; i < 8; i++)
-				player->collisionBox.vertex[i] = sum_vec3 (player->collisionBox.vertex[i], (vec3){0, 0, direction.z});
+				player->collisionbox.vertex[i] = sum_vec3 (player->collisionbox.vertex[i], (vec3){0, 0, direction.z});
 		}
 		
 		
@@ -1136,7 +1102,6 @@ void processMovement (GLFWwindow* window, Player *player, float deltaTime, CHUNK
 	
 	if (afterChunk.z > beforeChunk.z)
 		moveChunkZ (chunks, -1);
-	//*/
 }
 
 
@@ -1144,15 +1109,14 @@ void processMovement (GLFWwindow* window, Player *player, float deltaTime, CHUNK
 
 bool detectCollisionPlayer (GLFWwindow* window, Player *player, vec3 movement, float deltaTime, float speed, CHUNK_MANAGER *chunks) {
 	
-	return isBlock (relativePos(chunks, player->collisionBox.vertex[0]), sum_vec3 (player->collisionBox.vertex[0], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[1]), sum_vec3 (player->collisionBox.vertex[1], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[2]), sum_vec3 (player->collisionBox.vertex[2], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[3]), sum_vec3 (player->collisionBox.vertex[3], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[4]), sum_vec3 (player->collisionBox.vertex[4], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[5]), sum_vec3 (player->collisionBox.vertex[5], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[6]), sum_vec3 (player->collisionBox.vertex[6], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
-		|| isBlock (relativePos(chunks, player->collisionBox.vertex[7]), sum_vec3 (player->collisionBox.vertex[7], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)));
-	//*/
+	return isBlock (relativePos(chunks, player->collisionbox.vertex[0]), sum_vec3 (player->collisionbox.vertex[0], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[1]), sum_vec3 (player->collisionbox.vertex[1], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[2]), sum_vec3 (player->collisionbox.vertex[2], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[3]), sum_vec3 (player->collisionbox.vertex[3], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[4]), sum_vec3 (player->collisionbox.vertex[4], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[5]), sum_vec3 (player->collisionbox.vertex[5], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[6]), sum_vec3 (player->collisionbox.vertex[6], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)))
+		|| isBlock (relativePos(chunks, player->collisionbox.vertex[7]), sum_vec3 (player->collisionbox.vertex[7], scale_vec3 (normalize_vec3 (movement), speed * deltaTime)));
 }
 
 
@@ -1287,37 +1251,35 @@ BLOCK vecToBlock (vec3 T) {
 }
 
 int isBlock (TREE *tree, vec3 pos) {
-	return get_block (tree, vecToBlock(pos));
+	return (int)get_block(tree, vecToBlock(pos));
 }
 
 void fillSkyBlock () {
-	/*
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){0, 0, 0}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){1, 0, 0}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){-1, 0, 0}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){0, 0, 1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){1, 0, 1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){-1, 0, 1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){0, 0, -1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){1, 0, -1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){-1, 0, -1}, 1});
 	
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){0, -1, 0}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){1, -1, 0}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){-1, -1, 0}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){0, -1, 1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){1, -1, 1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){-1, -1, 1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){0, -1, -1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){1, -1, -1}, 1});
-	insertBlockToChunk (&test_chunks, (BLOCK){(vec3){-1, -1, -1}, 1});
-	*/
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){0, 0, 0}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){1, 0, 0}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){-1, 0, 0}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){0, 0, 1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){1, 0, 1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){-1, 0, 1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){0, 0, -1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){1, 0, -1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){-1, 0, -1}, 1});
+	
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){0, -1, 0}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){1, -1, 0}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){-1, -1, 0}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){0, -1, 1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){1, -1, 1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){-1, -1, 1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){0, -1, -1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){1, -1, -1}, 1});
+	insert_block_from_chunk (&test_chunks, (BLOCK){(vec3){-1, -1, -1}, 1});
+	
 }
 
 void saveWorld (game_state *state) {
 	saveChunks (state->chunks_info);
-
-	print_all (t->root);
 }
 
 void loadWorld (game_state *state) {
@@ -1350,14 +1312,14 @@ void loadWorld (game_state *state) {
 	state->player->onGround = true;
 	state->player->isFlying = false;
 	
-	state->player->collisionBox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
-	state->player->collisionBox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
-	state->player->collisionBox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
-	state->player->collisionBox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
-	state->player->collisionBox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
-	state->player->collisionBox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
-	state->player->collisionBox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
-	state->player->collisionBox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
+	state->player->collisionbox.vertex[0] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, -0.3});
+	state->player->collisionbox.vertex[1] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, -0.3});
+	state->player->collisionbox.vertex[2] = sum_vec3(player.camera.cameraPos, (vec3){0.3, -1.62, 0.3});
+	state->player->collisionbox.vertex[3] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, -1.62, 0.3});
+	state->player->collisionbox.vertex[4] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, -0.3});
+	state->player->collisionbox.vertex[5] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, -0.3});
+	state->player->collisionbox.vertex[6] = sum_vec3(player.camera.cameraPos, (vec3){0.3, 0.18, 0.3});
+	state->player->collisionbox.vertex[7] = sum_vec3(player.camera.cameraPos, (vec3){-0.3, 0.18, 0.3});
 	
 	struct stat st = {0};
 	if (stat(state->path_to_world, &st) == -1) {
@@ -1434,17 +1396,7 @@ void loadChunk (CHUNK *chunk) {
 
 	BLOCK b;
     while (fscanf (p, "%f %f %f %d %hd %hd %hd %hd %hd %d %d %d %d%*c", &b.pos.x, &b.pos.y, &b.pos.z, &b.id, &b.north, &b.south, &b.east, &b.west, &b.power, &b.powered, &b.power_source, &b.lit, &b.tick) != EOF) {		
-		b.update = NULL;
-		
-		if (b.id == 7)
-			b.update = redstone_lamp_update;
-		if (b.id == 9)
-			b.update = redstone_dust_update;
-		if (b.id == 11)
-			b.update = piston_update;
-		
         insert_block (chunk->blocks, b);
-		insert_block (t, b);
 	}
 }
 
@@ -1544,28 +1496,10 @@ void moveChunkZ (CHUNK_MANAGER *chunks, int z) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
 vec3 cordToChunkCord (vec3 pos) {
 	vec3 r;
 	r.x = pos.x>=0?(int)pos.x/64:(int)pos.x/64-1;
 	r.y = pos.y>=0?(int)pos.y/64:(int)pos.y/64-1;
 	r.z = pos.z>=0?(int)pos.z/64:(int)pos.z/64-1;
 	return r;
-}
-
-void insertBlockToChunk (CHUNK_MANAGER *chunks, BLOCK b) {
-	insert_block (relativePos(chunks, b.pos), b);
-}
-
-void removeBlockToChunk (CHUNK_MANAGER *chunks, BLOCK b) {
-	erase_block (relativePos(chunks, b.pos), b);
 }

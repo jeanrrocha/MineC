@@ -1,28 +1,30 @@
 #ifndef TREE_H
 #define TREE_H
-
-#include "avl.h"
+#include "types.h"
 #include <stdlib.h>
-//typedef TREE_NODE node;
 
-typedef struct NODE
+typedef struct TREE_NODE TREE_NODE;
+typedef struct TREE TREE;
+
+struct TREE_NODE
 {
 	void *data;
 	char bal;
-	struct NODE *left, *right;
-} TREE_NODE;
+	TREE_NODE *left, *right;
+};
 
-typedef struct TREE
+struct TREE
 {
 	TREE_NODE* root;
 	size_t sz;
 	int _height;
 	size_t n;
 	int (*compar)(const void *a, const void *b);
-} TREE;
+};
 
 TREE *tree_init (const size_t sz, int (*compar)(const void*, const void*));
 
+void* tree_search (TREE tree[restrict static 1], const void *key);
 void tree_insert (TREE tree[restrict static 1], const void *key);
 void tree_erase (TREE tree[restrict static 1], const void *key);
 
