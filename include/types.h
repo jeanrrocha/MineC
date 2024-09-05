@@ -224,6 +224,7 @@
 	} MOUSE_MANAGER;
 
 	typedef struct {
+		bool is_button_0_pressed;
 		bool is_button_1_pressed;
 		bool is_button_2_pressed;
 		bool is_button_3_pressed;
@@ -234,34 +235,36 @@
 		bool is_button_8_pressed;
 		bool is_button_9_pressed;
 		
-		bool is_button_q_pressed;
-		bool is_button_w_pressed;
-		bool is_button_e_pressed;
-		bool is_button_r_pressed;
-		bool is_button_t_pressed;
-		bool is_button_y_pressed;
-		bool is_button_u_pressed;
-		bool is_button_i_pressed;
-		bool is_button_o_pressed;
-		bool is_button_p_pressed;
+		bool is_button_Q_pressed;
+		bool is_button_W_pressed;
+		bool is_button_E_pressed;
+		bool is_button_R_pressed;
+		bool is_button_T_pressed;
+		bool is_button_Y_pressed;
+		bool is_button_U_pressed;
+		bool is_button_I_pressed;
+		bool is_button_O_pressed;
+		bool is_button_P_pressed;
 		
-		bool is_button_a_pressed;
-		bool is_button_s_pressed;
-		bool is_button_d_pressed;
-		bool is_button_f_pressed;
-		bool is_button_g_pressed;
-		bool is_button_h_pressed;
-		bool is_button_j_pressed;
-		bool is_button_k_pressed;
-		bool is_button_l_pressed;
+		bool is_button_A_pressed;
+		bool is_button_S_pressed;
+		bool is_button_D_pressed;
+		bool is_button_F_pressed;
+		bool is_button_G_pressed;
+		bool is_button_H_pressed;
+		bool is_button_J_pressed;
+		bool is_button_K_pressed;
+		bool is_button_L_pressed;
 		
-		bool is_button_z_pressed;
-		bool is_button_x_pressed;
-		bool is_button_c_pressed;
-		bool is_button_v_pressed;
-		bool is_button_b_pressed;
-		bool is_button_n_pressed;
-		bool is_button_m_pressed;
+		bool is_button_Z_pressed;
+		bool is_button_X_pressed;
+		bool is_button_C_pressed;
+		bool is_button_V_pressed;
+		bool is_button_B_pressed;
+		bool is_button_N_pressed;
+		bool is_button_M_pressed;
+		
+		bool is_button_shift_pressed;
 	} KEYBOARD_MANAGER;
 	
 	typedef struct {

@@ -27,8 +27,10 @@
 #define CUBE 96
 
 
-const int windowWidth = 1760;
-const int windowHeight = 990;
+//const int windowWidth = 1760;
+const int windowWidth = 1366;
+//const int windowHeight = 990;
+const int windowHeight = 768;
 
 const char* windowTitle = "MineC";
 
@@ -90,10 +92,6 @@ typedef struct {
 	int texture;
 } element_2d;
 
-void main_menu_single_player_button(game_state* state) {
-	state->state = gameplay;
-}
-
 void loadWorld (game_state *state);
 void saveWorld (game_state *state);
 
@@ -127,6 +125,9 @@ BUTTON button_init (game_state *state, vec2 size, vec2 pos, float* vertexs, int*
 	b.vertex[0] = (vec2){b.pos.w * state->window_width, b.pos.x * state->window_height};
 	b.vertex[1] = (vec2){b.vertex[0].x + size.x, b.vertex[0].y + size.y};
 	
+	printf ("%f %f\n", b.vertex[0].x, b.vertex[0].y);
+	printf ("%f %f\n", b.vertex[1].x, b.vertex[1].y);
+	
 	glGenTextures (1, &b.texture);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, b.texture);
@@ -142,6 +143,25 @@ BUTTON button_init (game_state *state, vec2 size, vec2 pos, float* vertexs, int*
 	stbi_image_free(textureBytes);
 	
 	if (vertexs && indexes) {
+		glGenVertexArrays(1, &b.VAO);
+		glGenBuffers(1, &b.VBO);
+		glGenBuffers(1, &b.EBO);
+		
+		glBindVertexArray(b.VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, b.VBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b.EBO);
+		
+		glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(float), vertexs, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(int), indexes, GL_STATIC_DRAW);
+		
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)(sizeof(float)*2));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		
 	} else {
 		glGenVertexArrays(1, &b.VAO);
@@ -178,17 +198,346 @@ void draw_button (game_state *state, BUTTON b) {
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
+
+
+/*
+bool is_button_1_pressed;
+bool is_button_2_pressed;
+bool is_button_3_pressed;
+bool is_button_4_pressed;
+bool is_button_5_pressed;
+bool is_button_6_pressed;
+bool is_button_7_pressed;
+bool is_button_8_pressed;
+bool is_button_9_pressed;
+
+bool is_button_q_pressed;
+bool is_button_w_pressed;
+bool is_button_e_pressed;
+bool is_button_r_pressed;
+bool is_button_t_pressed;
+bool is_button_y_pressed;
+bool is_button_u_pressed;
+bool is_button_i_pressed;
+bool is_button_o_pressed;
+bool is_button_p_pressed;
+
+bool is_button_a_pressed;
+bool is_button_s_pressed;
+bool is_button_d_pressed;
+bool is_button_f_pressed;
+bool is_button_g_pressed;
+bool is_button_h_pressed;
+bool is_button_j_pressed;
+bool is_button_k_pressed;
+bool is_button_l_pressed;
+
+bool is_button_z_pressed;
+bool is_button_x_pressed;
+bool is_button_c_pressed;
+bool is_button_v_pressed;
+bool is_button_b_pressed;
+bool is_button_n_pressed;
+bool is_button_m_pressed;
+*/
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	game_state *state = (game_state*)glfwGetWindowUserPointer(window);
+	
+	if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS && !state->keyboard_info->is_button_shift_pressed) {
+		state->keyboard_info->is_button_shift_pressed = true;
+	} else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE && state->keyboard_info->is_button_shift_pressed) {
+		state->keyboard_info->is_button_shift_pressed = false;
+	}
+	
+	
+	
+	if (key == GLFW_KEY_0 && action == GLFW_PRESS && !state->keyboard_info->is_button_0_pressed) {
+		state->keyboard_info->is_button_0_pressed = true;
+		state->current_world[strlen(state->current_world)] = '0';
+	} else if (key == GLFW_KEY_0 && action == GLFW_RELEASE && state->keyboard_info->is_button_0_pressed) {
+		state->keyboard_info->is_button_0_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS && !state->keyboard_info->is_button_1_pressed) {
+		state->keyboard_info->is_button_1_pressed = true;
+		state->current_world[strlen(state->current_world)] = '1';
+	} else if (key == GLFW_KEY_1 && action == GLFW_RELEASE && state->keyboard_info->is_button_1_pressed) {
+		state->keyboard_info->is_button_1_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS && !state->keyboard_info->is_button_2_pressed) {
+		state->keyboard_info->is_button_2_pressed = true;
+		state->current_world[strlen(state->current_world)] = '2';
+	} else if (key == GLFW_KEY_2 && action == GLFW_RELEASE && state->keyboard_info->is_button_2_pressed) {
+		state->keyboard_info->is_button_2_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS && !state->keyboard_info->is_button_3_pressed) {
+		state->keyboard_info->is_button_3_pressed = true;
+		state->current_world[strlen(state->current_world)] = '3';
+	} else if (key == GLFW_KEY_3 && action == GLFW_RELEASE && state->keyboard_info->is_button_3_pressed) {
+		state->keyboard_info->is_button_3_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS && !state->keyboard_info->is_button_4_pressed) {
+		state->keyboard_info->is_button_4_pressed = true;
+		state->current_world[strlen(state->current_world)] = '4';
+	} else if (key == GLFW_KEY_4 && action == GLFW_RELEASE && state->keyboard_info->is_button_4_pressed) {
+		state->keyboard_info->is_button_4_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS && !state->keyboard_info->is_button_5_pressed) {
+		state->keyboard_info->is_button_5_pressed = true;
+		state->current_world[strlen(state->current_world)] = '5';
+	} else if (key == GLFW_KEY_5 && action == GLFW_RELEASE && state->keyboard_info->is_button_5_pressed) {
+		state->keyboard_info->is_button_5_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_6 && action == GLFW_PRESS && !state->keyboard_info->is_button_6_pressed) {
+		state->keyboard_info->is_button_6_pressed = true;
+		state->current_world[strlen(state->current_world)] = '6';
+	} else if (key == GLFW_KEY_6 && action == GLFW_RELEASE && state->keyboard_info->is_button_6_pressed) {
+		state->keyboard_info->is_button_6_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_7 && action == GLFW_PRESS && !state->keyboard_info->is_button_7_pressed) {
+		state->keyboard_info->is_button_7_pressed = true;
+		state->current_world[strlen(state->current_world)] = '7';
+	} else if (key == GLFW_KEY_7 && action == GLFW_RELEASE && state->keyboard_info->is_button_7_pressed) {
+		state->keyboard_info->is_button_7_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_8 && action == GLFW_PRESS && !state->keyboard_info->is_button_8_pressed) {
+		state->keyboard_info->is_button_8_pressed = true;
+		state->current_world[strlen(state->current_world)] = '8';
+	} else if (key == GLFW_KEY_8 && action == GLFW_RELEASE && state->keyboard_info->is_button_8_pressed) {
+		state->keyboard_info->is_button_8_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_9 && action == GLFW_PRESS && !state->keyboard_info->is_button_9_pressed) {
+		state->keyboard_info->is_button_9_pressed = true;
+		state->current_world[strlen(state->current_world)] = '9';
+	} else if (key == GLFW_KEY_9 && action == GLFW_RELEASE && state->keyboard_info->is_button_9_pressed) {
+		state->keyboard_info->is_button_9_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS && !state->keyboard_info->is_button_Q_pressed) {
+		state->keyboard_info->is_button_Q_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'q' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_Q && action == GLFW_RELEASE && state->keyboard_info->is_button_Q_pressed) {
+		state->keyboard_info->is_button_Q_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_W && action == GLFW_PRESS && !state->keyboard_info->is_button_W_pressed) {
+		state->keyboard_info->is_button_W_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'w' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_W && action == GLFW_RELEASE && state->keyboard_info->is_button_W_pressed) {
+		state->keyboard_info->is_button_W_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_E && action == GLFW_PRESS && !state->keyboard_info->is_button_E_pressed) {
+		state->keyboard_info->is_button_E_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'e' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_E && action == GLFW_RELEASE && state->keyboard_info->is_button_E_pressed) {
+		state->keyboard_info->is_button_E_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_R && action == GLFW_PRESS && !state->keyboard_info->is_button_R_pressed) {
+		state->keyboard_info->is_button_R_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'r' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_R && action == GLFW_RELEASE && state->keyboard_info->is_button_R_pressed) {
+		state->keyboard_info->is_button_R_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_T && action == GLFW_PRESS && !state->keyboard_info->is_button_T_pressed) {
+		state->keyboard_info->is_button_T_pressed = true;
+		state->current_world[strlen(state->current_world)] = 't' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_T && action == GLFW_RELEASE && state->keyboard_info->is_button_T_pressed) {
+		state->keyboard_info->is_button_T_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_Y && action == GLFW_PRESS && !state->keyboard_info->is_button_Y_pressed) {
+		state->keyboard_info->is_button_Y_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'y' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_Y && action == GLFW_RELEASE && state->keyboard_info->is_button_Y_pressed) {
+		state->keyboard_info->is_button_Y_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_U && action == GLFW_PRESS && !state->keyboard_info->is_button_U_pressed) {
+		state->keyboard_info->is_button_U_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'u' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_U && action == GLFW_RELEASE && state->keyboard_info->is_button_U_pressed) {
+		state->keyboard_info->is_button_U_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_I && action == GLFW_PRESS && !state->keyboard_info->is_button_I_pressed) {
+		state->keyboard_info->is_button_I_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'i' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_I && action == GLFW_RELEASE && state->keyboard_info->is_button_I_pressed) {
+		state->keyboard_info->is_button_I_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_O && action == GLFW_PRESS && !state->keyboard_info->is_button_O_pressed) {
+		state->keyboard_info->is_button_O_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'o' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_O && action == GLFW_RELEASE && state->keyboard_info->is_button_O_pressed) {
+		state->keyboard_info->is_button_O_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_P && action == GLFW_PRESS && !state->keyboard_info->is_button_P_pressed) {
+		state->keyboard_info->is_button_P_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'p' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_P && action == GLFW_RELEASE && state->keyboard_info->is_button_P_pressed) {
+		state->keyboard_info->is_button_P_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_A && action == GLFW_PRESS && !state->keyboard_info->is_button_A_pressed) {
+		state->keyboard_info->is_button_A_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'a' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_A && action == GLFW_RELEASE && state->keyboard_info->is_button_A_pressed) {
+		state->keyboard_info->is_button_A_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_S && action == GLFW_PRESS && !state->keyboard_info->is_button_S_pressed) {
+		state->keyboard_info->is_button_S_pressed = true;
+		state->current_world[strlen(state->current_world)] = 's' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_S && action == GLFW_RELEASE && state->keyboard_info->is_button_S_pressed) {
+		state->keyboard_info->is_button_S_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_D && action == GLFW_PRESS && !state->keyboard_info->is_button_D_pressed) {
+		state->keyboard_info->is_button_D_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'd' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_D && action == GLFW_RELEASE && state->keyboard_info->is_button_D_pressed) {
+		state->keyboard_info->is_button_D_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_F && action == GLFW_PRESS && !state->keyboard_info->is_button_F_pressed) {
+		state->keyboard_info->is_button_F_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'f' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_F && action == GLFW_RELEASE && state->keyboard_info->is_button_F_pressed) {
+		state->keyboard_info->is_button_F_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_G && action == GLFW_PRESS && !state->keyboard_info->is_button_G_pressed) {
+		state->keyboard_info->is_button_G_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'g' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_G && action == GLFW_RELEASE && state->keyboard_info->is_button_G_pressed) {
+		state->keyboard_info->is_button_G_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_H && action == GLFW_PRESS && !state->keyboard_info->is_button_H_pressed) {
+		state->keyboard_info->is_button_H_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'h' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_H && action == GLFW_RELEASE && state->keyboard_info->is_button_H_pressed) {
+		state->keyboard_info->is_button_H_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_J && action == GLFW_PRESS && !state->keyboard_info->is_button_J_pressed) {
+		state->keyboard_info->is_button_J_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'j' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_J && action == GLFW_RELEASE && state->keyboard_info->is_button_J_pressed) {
+		state->keyboard_info->is_button_J_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_K && action == GLFW_PRESS && !state->keyboard_info->is_button_K_pressed) {
+		state->keyboard_info->is_button_K_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'k' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_K && action == GLFW_RELEASE && state->keyboard_info->is_button_K_pressed) {
+		state->keyboard_info->is_button_K_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_L && action == GLFW_PRESS && !state->keyboard_info->is_button_L_pressed) {
+		state->keyboard_info->is_button_L_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'l' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_L && action == GLFW_RELEASE && state->keyboard_info->is_button_L_pressed) {
+		state->keyboard_info->is_button_L_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS && !state->keyboard_info->is_button_Z_pressed) {
+		state->keyboard_info->is_button_Z_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'z' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_Z && action == GLFW_RELEASE && state->keyboard_info->is_button_Z_pressed) {
+		state->keyboard_info->is_button_Z_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_X && action == GLFW_PRESS && !state->keyboard_info->is_button_X_pressed) {
+		state->keyboard_info->is_button_X_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'x' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_X && action == GLFW_RELEASE && state->keyboard_info->is_button_X_pressed) {
+		state->keyboard_info->is_button_X_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_C && action == GLFW_PRESS && !state->keyboard_info->is_button_C_pressed) {
+		state->keyboard_info->is_button_C_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'c' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_C && action == GLFW_RELEASE && state->keyboard_info->is_button_C_pressed) {
+		state->keyboard_info->is_button_C_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_V && action == GLFW_PRESS && !state->keyboard_info->is_button_V_pressed) {
+		state->keyboard_info->is_button_V_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'v' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_V && action == GLFW_RELEASE && state->keyboard_info->is_button_V_pressed) {
+		state->keyboard_info->is_button_V_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_B && action == GLFW_PRESS && !state->keyboard_info->is_button_B_pressed) {
+		state->keyboard_info->is_button_B_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'b' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_B && action == GLFW_RELEASE && state->keyboard_info->is_button_B_pressed) {
+		state->keyboard_info->is_button_B_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_N && action == GLFW_PRESS && !state->keyboard_info->is_button_N_pressed) {
+		state->keyboard_info->is_button_N_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'n' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_N && action == GLFW_RELEASE && state->keyboard_info->is_button_N_pressed) {
+		state->keyboard_info->is_button_N_pressed = false;
+	}
+	
+	if (key == GLFW_KEY_M && action == GLFW_PRESS && !state->keyboard_info->is_button_M_pressed) {
+		state->keyboard_info->is_button_M_pressed = true;
+		state->current_world[strlen(state->current_world)] = 'm' - 32*state->keyboard_info->is_button_shift_pressed;
+	} else if (key == GLFW_KEY_M && action == GLFW_RELEASE && state->keyboard_info->is_button_M_pressed) {
+		state->keyboard_info->is_button_M_pressed = false;
+	}
+
+}
+
+bool check_button_click (game_state *state, BUTTON b) {
+	return 	state->mouse_info->lastX >= b.vertex[0].x &&
+			state->mouse_info->lastX <  b.vertex[1].x &&
+			state->mouse_info->lastY >= b.vertex[0].y &&
+			state->mouse_info->lastY <  b.vertex[1].y &&
+			glfwGetMouseButton(state->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+}
+
+
+
+void main_menu_single_player_button (game_state* state) {
+	state->state = 1;
+	glfwSetKeyCallback(state->window, key_callback);
+	memset (state->current_world, 0, 128);
+}
+
 int main(void)
 {	
+
+	KEYBOARD_MANAGER teclado;
 	ESTADO.current_world = malloc(128);
 	ESTADO.path_to_world = malloc(140);
 	ESTADO.path_to_world_chunks = malloc(150);
 	ESTADO.chunks_info = &test_chunks;
 	ESTADO.player = &player;
 	ESTADO.state = main_menu;
-	ESTADO.window_width = 1760;
-	ESTADO.window_height = 990;
+	ESTADO.keyboard_info = &teclado;
+	ESTADO.window_width = windowWidth;
+	ESTADO.window_height = windowHeight;
 	
+	ESTADO.keyboard_info->is_button_shift_pressed = false;
 	
 	for (int i = 0; i < 12; i++)
 		ESTADO.block_update_functions[i] = NULL;
@@ -221,7 +570,7 @@ int main(void)
 	/* Inicialianzo o GLFW e a janela */
 	
 	GLFWwindow* window;
-	ESTADO.window = window;
+
 	
 	if (!glfwInit()){
 		printf ("Failed to initialize GLFW.\n");
@@ -230,6 +579,7 @@ int main(void)
 	
 	window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, glfwGetPrimaryMonitor(), NULL);
 	glfwSetWindowUserPointer(window, &ESTADO);
+	ESTADO.window = window;
 	
 	if (!window){
 		printf ("Failed to create GLFW window\n");
@@ -529,6 +879,111 @@ int main(void)
 	
 	ESTADO.buttons_info[main_menu][main_menu_single_player] = button_init (&ESTADO, (vec2){400., 40.}, (vec2){0.5, 0.365}, NULL, NULL, "./resources/textures/singleplayer.png", main_menu_single_player_button);
 	
+	BUTTON botao = button_init (&ESTADO, (vec2){400., 40.}, (vec2){0.5, 0.6}, (float[]){0., 0., 0., 0., 0., 40. / ESTADO.window_height, 0., 0.09, 400. / ESTADO.window_width, 40. / ESTADO.window_height, 0.7070, 0.09, 400. / ESTADO.window_width, 0., 0.7070, 0.}, (int[]){0, 1, 2, 0, 2, 3}, "./resources/textures/widgets.png", NULL);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/*
+	b.size = (vec2){400., 40.};
+	b.normalized_size = (vec2){size.x / state->window_width, size.y / state->window_height};
+	b.absolute_pos = (vec2){0.5, 0.7}
+	b.pos = (vec4){pos.x - b.normalized_size.x / 2, pos.y - b.normalized_size.y / 2};
+	b.vertex[0] = (vec2){b.pos.w * state->window_width, b.pos.x * state->window_height};
+	b.vertex[1] = (vec2){b.vertex[0].x + size.x, b.vertex[0].y + size.y};
+	
+	glGenTextures (1, &b.texture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, b.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	textureBytes = stbi_load ("./resources/textures/widgets.png", &widht_img, &height_img, &num_col_ch, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widht_img, height_img, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureBytes);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(textureBytes);
+	*/
+	
+	
+	/*
+		BUTTON b;
+	b.exec = exec;
+	b.size = size;
+	b.normalized_size = (vec2){size.x / state->window_width, size.y / state->window_height};
+	b.absolute_pos = pos;
+	b.pos = (vec4){pos.x - b.normalized_size.x / 2, pos.y - b.normalized_size.y / 2};
+	b.vertex[0] = (vec2){b.pos.w * state->window_width, b.pos.x * state->window_height};
+	b.vertex[1] = (vec2){b.vertex[0].x + size.x, b.vertex[0].y + size.y};
+	
+	printf ("%f %f\n", b.vertex[0].x, b.vertex[0].y);
+	printf ("%f %f\n", b.vertex[1].x, b.vertex[1].y);
+	
+	glGenTextures (1, &b.texture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, b.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	int widht_img, height_img, num_col_ch;
+	unsigned char* textureBytes = stbi_load (texture_path, &widht_img, &height_img, &num_col_ch, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widht_img, height_img, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureBytes);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(textureBytes);
+	
+	if (vertexs && indexes) {
+		
+	} else {
+		glGenVertexArrays(1, &b.VAO);
+		glGenBuffers(1, &b.VBO);
+		glGenBuffers(1, &b.EBO);
+		
+		glBindVertexArray(b.VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, b.VBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b.EBO);
+		
+		glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(float), (float[]){0., 0., 0., 0., 0., size.y / state->window_height, 0., 1., size.x / state->window_width, size.y / state->window_height, 1., 1., size.x / state->window_width, 0., 1., 0.}, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(int), (int[]){0, 1, 2, 0, 2, 3}, GL_STATIC_DRAW);
+		
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)(sizeof(float)*2));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
+	*/
+	
+	
+	
+	/*
+	glBindVertexArray(b.VAO);
+	glBindTexture(GL_TEXTURE_2D, b.texture);
+
+	int pos = glGetUniformLocation(shaderProgram_2D, "p");
+	glUniform4fv(pos, 1, &b.pos.w);
+
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	*/
+	
+	
+	
+	//ESTADO.buttons_info[main_menu][main_menu_single_player] = button_init (&ESTADO, (vec2){400., 40.}, (vec2){0.5, 0.6}, NULL, NULL, "./resources/textures/widgets.png", main_menu_single_player_button);
+	
+	float fov = 90.f;
+	
 	while (!glfwWindowShouldClose(window))
 	{
 		do {
@@ -547,10 +1002,10 @@ int main(void)
 			glUseProgram(shaderProgram_2D);
 			
 			draw_button (&ESTADO, ESTADO.buttons_info[main_menu][main_menu_single_player]);
+			draw_button (&ESTADO, botao);
 			
-			if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-				if (ESTADO.mouse_info->lastX >= ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[0].x && ESTADO.mouse_info->lastX < ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[1].x && ESTADO.mouse_info->lastY >= ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[0].y && ESTADO.mouse_info->lastY < ESTADO.buttons_info[main_menu][main_menu_single_player].vertex[1].y)
-					ESTADO.state = 1;
+			if (check_button_click(&ESTADO, ESTADO.buttons_info[main_menu][main_menu_single_player])) {
+				 ESTADO.buttons_info[main_menu][main_menu_single_player].exec (&ESTADO);
 			}
 			
 			if (help > 0)
@@ -558,12 +1013,13 @@ int main(void)
 			
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && help <= 0)
 				glfwSetWindowShouldClose(window, 1);
+			
 		} else if (ESTADO.state == 1) {
-			memset(ESTADO.current_world, 0, strlen(ESTADO.current_world));
-			fgets(ESTADO.current_world, 128, stdin);
-			ESTADO.current_world[strcspn(ESTADO.current_world, "\n")] = 0;
-			loadWorld (&ESTADO);
-			ESTADO.state = 2;
+			if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+				loadWorld (&ESTADO);
+				glfwSetKeyCallback(window, NULL);
+				ESTADO.state = 2;
+			}
 		} else if (ESTADO.state == 2) {
 			
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
@@ -602,10 +1058,10 @@ int main(void)
 				player.currentBlock = piston;
 			
 			if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-				cameraSpeed += 0.001f;
+				fov += 0.1f;
 			
 			if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-				cameraSpeed -= 0.001f;
+				fov -= 0.1f;
 			
 			ray r = initializeRay (player.camera.cameraPos, player.camera.cameraFront);
 			
@@ -713,7 +1169,7 @@ int main(void)
 			
 			player.camera.view = lookAt_mat4 (player.camera.cameraPos, sum_vec3 (player.camera.cameraPos, player.camera.cameraFront), player.camera.cameraUp);
 			
-			player.camera.proj = perspective_mat4 ((float)degToRad(90.f), (float)windowWidth/windowHeight, 0.1f, 1600.0f);
+			player.camera.proj = perspective_mat4 ((float)degToRad(fov), (float)windowWidth/windowHeight, 0.1f, 1600.0f);
 			
 			GLuint shaders[] = {shaderProgram, outlineShaderProgram};
 			
@@ -1323,8 +1779,8 @@ void loadWorld (game_state *state) {
 	
 	struct stat st = {0};
 	if (stat(state->path_to_world, &st) == -1) {
-		mkdir(state->path_to_world);
-		mkdir(state->path_to_world_chunks);
+		mkdir(state->path_to_world, 0777);
+		mkdir(state->path_to_world_chunks, 0777	);
 		fillSkyBlock();
 	}
 	
@@ -1341,11 +1797,15 @@ void saveChunks (CHUNK_MANAGER *chunks) {
 	}
 }
 
+
+
 void saveChunk (CHUNK *chunk) {
 	
 	char *filePath = malloc(200);
 
 	sprintf (filePath, "saves/%s/chunks/chunk%d%d%d.map", ESTADO.current_world, (int)chunk->pos.x, (int)chunk->pos.y, (int)chunk->pos.z);
+	
+	printf ("%s\n", filePath);
 	
 	FILE *p = fopen (filePath, "w");
 	if (!p)
@@ -1358,13 +1818,14 @@ void saveChunk (CHUNK *chunk) {
 }
 
 void saveBlocks (TREE_NODE* node, FILE *p) {
-	
     if (!node)
         return;
-	
+
 	BLOCK data = *(BLOCK*)node->data;
 	
     fprintf(p, "%f %f %f %d %hd %hd %hd %hd %hd %d %d %d %d \n", data.pos.x, data.pos.y, data.pos.z, data.id, data.north, data.south, data.east, data.west, data.power, data.powered, data.power_source, data.lit, data.tick);
+    
+    print_block(data);
     
     saveBlocks (node->left, p);
     saveBlocks (node->right, p);

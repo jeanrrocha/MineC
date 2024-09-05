@@ -149,7 +149,7 @@ block *blockWest (node **chunks, block b) {
 */
 
 void redstone_lamp_update (BLOCK *b, CHUNK_MANAGER *chunks) {
-	printf ("AAA\n");
+	//printf ("AAA\n");
 	
 	/*
 	b->powered = false;
