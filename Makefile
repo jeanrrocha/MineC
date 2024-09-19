@@ -6,13 +6,13 @@ INCDIR := include
 SRCDIR := src
 LIBDIR := lib
 
-CFLAGS   := -std=c2x -lm -lglfw3 -lgdi32
+CFLAGS   := -std=c2x -lm -lglfw
 CPPFLAGS := -I$(INCDIR) -L$(LIBDIR) -finput-charset=UTF-8 -MMD
 LDFLAGS  := 
 	TARGET   := release
 	CFLAGS   += -c
 	#CFLAGS   += -O3
-	LDFLAGS += -std=c2x -lm -lglfw3 -lgdi32
+	LDFLAGS += -std=c2x -lm -lglfw
 	LDFLAGS += -I$(INCDIR) -L$(LIBDIR)
 
 OBJDIR := obj/$(TARGET)
